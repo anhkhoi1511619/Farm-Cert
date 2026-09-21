@@ -13,13 +13,12 @@ pipeline {
             }
         }
 
-        /*
         stage('Configure Android SDK') {
             steps {
                 script {
                     def sdkPath = sh(
                         script: '''
-                            for candidate in "$ANDROID_SDK_ROOT" "$ANDROID_HOME" "$HOME/Library/Android/sdk" "$HOME/Android/Sdk"; do
+                            for candidate in "$HOME/Library/Android/sdk" "$HOME/Android/Sdk"; do
                                 if [ -n "$candidate" ] && [ -d "$candidate" ]; then
                                     printf '%s' "$candidate"
                                     exit 0
@@ -31,12 +30,8 @@ pipeline {
                     ).trim()
 
                     if (!sdkPath) {
-                        error('Android SDK not found. Configure ANDROID_SDK_ROOT on the Jenkins agent.')
+                        error('Android SDK not found. Install it at the standard macOS or Linux SDK location on the Jenkins agent.')
                     }
-
-                    env.ANDROID_HOME = sdkPath
-                    env.ANDROID_SDK_ROOT = sdkPath
-                    env.PATH = "${sdkPath}/platform-tools:${sdkPath}/cmdline-tools/latest/bin:${env.PATH}"
 
                     sh "printf 'sdk.dir=%s\\n' '${sdkPath.replace('\\\\', '\\\\\\\\')}' > local.properties"
                     sh "test -d '${sdkPath}/platforms/android-36' || (echo 'Android SDK Platform 36 is missing.' && exit 1)"
@@ -64,13 +59,6 @@ pipeline {
                 success {
                     archiveArtifacts artifacts: 'app/build/outputs/apk/debug/app-debug.apk', fingerprint: true
                 }
-            }
-        }
-        */
-
-        stage('CI/CD temporarily disabled') {
-            steps {
-                echo 'CI/CD test and build stages are temporarily disabled.'
             }
         }
     }

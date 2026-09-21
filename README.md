@@ -90,18 +90,16 @@ Các test hiện có kiểm tra việc parse hai ngân hàng câu hỏi thật, 
 
 ## Jenkins CI/CD
 
-File `Jenkinsfile` ở thư mục gốc mô phỏng pipeline của dự án PR-Profile nhưng phù hợp với cấu trúc Farm Cert hiện tại. Các stage test/build hiện đang được comment tạm thời theo yêu cầu; Jenkins chỉ checkout source và ghi nhận trạng thái CI/CD tạm tắt.
+File `Jenkinsfile` ở thư mục gốc mô phỏng pipeline của dự án PR-Profile nhưng phù hợp với cấu trúc Farm Cert hiện tại. Pipeline không chứa đường dẫn tuyệt đối kiểu `/Users/...`; nó chỉ dùng SDK path chuẩn trên Jenkins agent để tạo `local.properties` tạm thời.
 
-Khi cần bật lại CI/CD, bỏ comment block trong `Jenkinsfile`.
-
-Pipeline đầy đủ trước khi tạm tắt gồm:
+Pipeline gồm:
 
 1. Checkout source từ SCM.
 2. Chạy toàn bộ JUnit test bằng `testDebugUnitTest` và xuất kết quả JUnit cho Jenkins.
 3. Build APK debug bằng `assembleDebug`.
 4. Lưu APK và các report làm artifact của build.
 
-Jenkins agent cần có JDK 17, Android SDK Platform 36, Android SDK Build-Tools, Android SDK Platform-Tools và quyền chạy shell script. Pipeline tự tìm SDK theo thứ tự `ANDROID_SDK_ROOT`, `ANDROID_HOME`, `~/Library/Android/sdk` (macOS) và `~/Android/Sdk` (Linux), sau đó tạo `local.properties` tạm thời trong workspace. Nếu SDK nằm ở vị trí khác, hãy cấu hình biến `ANDROID_SDK_ROOT` trên Jenkins agent.
+Jenkins agent cần có JDK 17, Android SDK Platform 36, Android SDK Build-Tools, Android SDK Platform-Tools và quyền chạy shell script. Pipeline tự tìm SDK tại `~/Library/Android/sdk` (macOS) hoặc `~/Android/Sdk` (Linux), sau đó tạo `local.properties` tạm thời trong workspace.
 
 Bản release `.aab` và upload lên Google Play cần bổ sung credential keystore/Play Console riêng trên Jenkins; không đưa các secret này vào Git.
 
