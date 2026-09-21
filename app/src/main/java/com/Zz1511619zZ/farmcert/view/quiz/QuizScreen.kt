@@ -67,6 +67,7 @@ fun QuizScreen(uiViewModel: UIViewModel) {
             total = state.quizQuestions.size,
             selected = state.selectedAnswers,
             answered = state.answerSubmitted,
+            completedQuestionIndices = state.completedQuestionIndices,
             onSelect = uiViewModel::selectAnswer,
             onSubmit = uiViewModel::submitAnswer,
             onNext = uiViewModel::nextQuestion,
@@ -137,7 +138,7 @@ private fun SettingSwitch(title: String, subtitle: String, checked: Boolean, onC
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun QuizRun(question: QuizQuestion, index: Int, total: Int, selected: Set<String>, answered: Boolean, onSelect: (String) -> Unit, onSubmit: () -> Unit, onNext: () -> Unit, onJump: (Int) -> Unit, onBack: () -> Unit) {
+private fun QuizRun(question: QuizQuestion, index: Int, total: Int, selected: Set<String>, answered: Boolean, completedQuestionIndices: Set<Int>, onSelect: (String) -> Unit, onSubmit: () -> Unit, onNext: () -> Unit, onJump: (Int) -> Unit, onBack: () -> Unit) {
     Scaffold(topBar = { TopAppBar(title = { Text("Question ${index + 1} / $total") }, navigationIcon = { IconButton(onBack) { Icon(Icons.Default.ArrowBack, "Trang chủ") } }) }) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {
@@ -147,8 +148,19 @@ private fun QuizRun(question: QuizQuestion, index: Int, total: Int, selected: Se
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             row.forEach { number ->
                                 val selectedNumber = number == index
-                                Box(Modifier.width(38.dp).height(36.dp).background(if (selectedNumber) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp)).border(1.dp, if (selectedNumber) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp)).clickable { onJump(number) }, contentAlignment = Alignment.Center) {
-                                    Text("${number + 1}", fontWeight = if (selectedNumber) FontWeight.Bold else FontWeight.Normal)
+                                val completed = number in completedQuestionIndices
+                                val chipColor = when {
+                                    selectedNumber -> MaterialTheme.colorScheme.primaryContainer
+                                    completed -> Color(0xFFDDF5E5)
+                                    else -> MaterialTheme.colorScheme.surfaceVariant
+                                }
+                                val chipBorderColor = when {
+                                    selectedNumber -> MaterialTheme.colorScheme.primary
+                                    completed -> Color(0xFF16803C)
+                                    else -> MaterialTheme.colorScheme.outlineVariant
+                                }
+                                Box(Modifier.width(38.dp).height(36.dp).background(chipColor, RoundedCornerShape(8.dp)).border(1.dp, chipBorderColor, RoundedCornerShape(8.dp)).clickable { onJump(number) }, contentAlignment = Alignment.Center) {
+                                    Text("${number + 1}", fontWeight = if (selectedNumber || completed) FontWeight.Bold else FontWeight.Normal, color = if (completed && !selectedNumber) Color(0xFF16803C) else MaterialTheme.colorScheme.onSurface)
                                 }
                             }
                         }
