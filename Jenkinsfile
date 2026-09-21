@@ -13,6 +13,7 @@ pipeline {
             }
         }
 
+        /*
         stage('Configure Android SDK') {
             steps {
                 script {
@@ -63,6 +64,13 @@ pipeline {
                 success {
                     archiveArtifacts artifacts: 'app/build/outputs/apk/debug/app-debug.apk', fingerprint: true
                 }
+            }
+        }
+        */
+
+        stage('CI/CD temporarily disabled') {
+            steps {
+                echo 'CI/CD test and build stages are temporarily disabled.'
             }
         }
     }
