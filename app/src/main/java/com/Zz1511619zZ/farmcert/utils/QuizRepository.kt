@@ -14,6 +14,7 @@ object QuizRepository {
 
     internal fun parse(fileName: String, source: String): QuizSet {
         val jsonText = source.substringAfter("=").trim()
+            .replace(Regex("(?m)^\\s*//.*$"), "")
             .removeSuffix(";").trim()
             .replace(Regex(",\\s*([}\\]])"), "$1")
         val root = JSONObject(jsonText)

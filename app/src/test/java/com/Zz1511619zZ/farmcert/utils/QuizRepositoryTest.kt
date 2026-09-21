@@ -13,6 +13,7 @@ class QuizRepositoryTest {
               "title": "Sample exam",
               "description": "A sample",
               "questions": [
+                // Question one
                 {"question":"2 + 2?","options":["3","4"],"answers":["4"]}
               ]
             };
