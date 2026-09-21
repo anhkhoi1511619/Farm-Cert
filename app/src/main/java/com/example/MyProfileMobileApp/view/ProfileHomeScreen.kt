@@ -60,7 +60,7 @@ fun ProfileHomeScreen(uiViewModel: UIViewModel) {
         topBar = {
             TopAppBar(
                 title = { Text("Farm Cert", color = Color.White, fontWeight = FontWeight.Bold) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = FarmRed)
+                colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = FarmRed)
             )
         }
     ) { padding ->
