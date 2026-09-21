@@ -82,7 +82,7 @@ fun QuizScreen(uiViewModel: UIViewModel) {
             answered = state.completedQuestionIndices.size,
             durationSeconds = state.resultDurationSeconds,
             wrongCount = state.questionResults.count { !it.value },
-            onBackToSets = uiViewModel::showQuizSets,
+            onBackToSets = uiViewModel::showHome,
             onRetryWrong = uiViewModel::retryWrongQuestions,
             onRetryAll = uiViewModel::retryAllQuestions
         )
@@ -257,7 +257,7 @@ private fun QuizResultScreen(
         }
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = onBackToSets, Modifier.weight(1f)) { Text("Bộ đề") }
+                Button(onClick = onBackToSets, Modifier.weight(1f)) { Text("Trang chủ") }
                 OutlinedButton(onClick = onRetryAll, Modifier.weight(1f)) { Text("Tất cả câu") }
                 OutlinedButton(onClick = onRetryWrong, enabled = wrongCount > 0, modifier = Modifier.weight(1f)) { Text("Làm lại sai ($wrongCount)") }
             }
