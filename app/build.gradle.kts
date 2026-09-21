@@ -9,7 +9,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.MyProfileMobileApp"
+        applicationId = "com.Zz1511619zZ.farmcert"
         minSdk = 28
         targetSdk = 34
         versionCode = 1
