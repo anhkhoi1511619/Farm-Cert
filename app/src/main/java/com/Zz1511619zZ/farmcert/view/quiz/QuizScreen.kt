@@ -67,11 +67,24 @@ fun QuizScreen(uiViewModel: UIViewModel) {
             total = state.quizQuestions.size,
             selected = state.selectedAnswers,
             answered = state.answerSubmitted,
+            completedQuestionIndices = state.completedQuestionIndices,
+            questionResults = state.questionResults,
             onSelect = uiViewModel::selectAnswer,
             onSubmit = uiViewModel::submitAnswer,
             onNext = uiViewModel::nextQuestion,
             onJump = uiViewModel::jumpToQuestion,
             onBack = uiViewModel::showHome
+        )
+        com.Zz1511619zZ.farmcert.view.viewmodel.ScreenID.RESULT -> QuizResultScreen(
+            title = state.selectedQuiz?.title ?: "Kết quả bài thi",
+            total = state.quizQuestions.size,
+            correct = state.correctAnswersCount,
+            answered = state.completedQuestionIndices.size,
+            durationSeconds = state.resultDurationSeconds,
+            wrongCount = state.questionResults.count { !it.value },
+            onBackToSets = uiViewModel::showQuizSets,
+            onRetryWrong = uiViewModel::retryWrongQuestions,
+            onRetryAll = uiViewModel::retryAllQuestions
         )
         else -> QuizList(state.quizSets) { uiViewModel.openQuizSetup(it) }
     }
@@ -137,7 +150,7 @@ private fun SettingSwitch(title: String, subtitle: String, checked: Boolean, onC
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun QuizRun(question: QuizQuestion, index: Int, total: Int, selected: Set<String>, answered: Boolean, onSelect: (String) -> Unit, onSubmit: () -> Unit, onNext: () -> Unit, onJump: (Int) -> Unit, onBack: () -> Unit) {
+private fun QuizRun(question: QuizQuestion, index: Int, total: Int, selected: Set<String>, answered: Boolean, completedQuestionIndices: Set<Int>, questionResults: Map<Int, Boolean>, onSelect: (String) -> Unit, onSubmit: () -> Unit, onNext: () -> Unit, onJump: (Int) -> Unit, onBack: () -> Unit) {
     Scaffold(topBar = { TopAppBar(title = { Text("Question ${index + 1} / $total") }, navigationIcon = { IconButton(onBack) { Icon(Icons.Default.ArrowBack, "Trang chủ") } }) }) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {
@@ -147,8 +160,28 @@ private fun QuizRun(question: QuizQuestion, index: Int, total: Int, selected: Se
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             row.forEach { number ->
                                 val selectedNumber = number == index
-                                Box(Modifier.width(38.dp).height(36.dp).background(if (selectedNumber) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp)).border(1.dp, if (selectedNumber) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp)).clickable { onJump(number) }, contentAlignment = Alignment.Center) {
-                                    Text("${number + 1}", fontWeight = if (selectedNumber) FontWeight.Bold else FontWeight.Normal)
+                                val completed = number in completedQuestionIndices
+                                val isCorrect = questionResults[number] == true
+                                val isIncorrect = questionResults[number] == false
+                                val chipColor = when {
+                                    selectedNumber -> MaterialTheme.colorScheme.primaryContainer
+                                    isCorrect -> Color(0xFFDDF5E5)
+                                    isIncorrect -> Color(0xFFFFE0E0)
+                                    else -> MaterialTheme.colorScheme.surfaceVariant
+                                }
+                                val chipBorderColor = when {
+                                    selectedNumber -> MaterialTheme.colorScheme.primary
+                                    isCorrect -> Color(0xFF16803C)
+                                    isIncorrect -> Color(0xFFB3261E)
+                                    else -> MaterialTheme.colorScheme.outlineVariant
+                                }
+                                Box(Modifier.width(38.dp).height(36.dp).background(chipColor, RoundedCornerShape(8.dp)).border(1.dp, chipBorderColor, RoundedCornerShape(8.dp)).clickable { onJump(number) }, contentAlignment = Alignment.Center) {
+                                    Text("${number + 1}", fontWeight = if (selectedNumber || completed) FontWeight.Bold else FontWeight.Normal, color = when {
+                                        selectedNumber -> MaterialTheme.colorScheme.onSurface
+                                        isCorrect -> Color(0xFF16803C)
+                                        isIncorrect -> Color(0xFFB3261E)
+                                        else -> MaterialTheme.colorScheme.onSurface
+                                    })
                                 }
                             }
                         }
@@ -176,5 +209,68 @@ private fun AnswerCard(text: String, checked: Boolean, answered: Boolean, correc
     Row(Modifier.fillMaxWidth().background(color, RoundedCornerShape(14.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(14.dp)).clickable(enabled = !answered, onClick = onClick).padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(if (checked) "◉" else "○", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.width(12.dp)); Text(text)
+    }
+}
+
+@Composable
+private fun QuizResultScreen(
+    title: String,
+    total: Int,
+    correct: Int,
+    answered: Int,
+    durationSeconds: Long,
+    wrongCount: Int,
+    onBackToSets: () -> Unit,
+    onRetryWrong: () -> Unit,
+    onRetryAll: () -> Unit
+) {
+    val skipped = (total - answered).coerceAtLeast(0)
+    val percentage = if (total == 0) 0 else correct * 100 / total
+    val minutes = durationSeconds / 60
+    val seconds = durationSeconds % 60
+    LazyColumn(
+        Modifier.fillMaxSize().padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item {
+            Text("📊 KẾT QUẢ", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            Text("Kết quả bài thi", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+            Text(title, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        item {
+            Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp)) {
+                Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("$percentage%", style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Bold, color = if (percentage >= 70) Color(0xFF16803C) else Color(0xFFB3261E))
+                    Text("Điểm số", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(12.dp))
+                    Text(if (percentage >= 70) "✓ ĐẠT" else "✕ CHƯA ĐẠT", fontWeight = FontWeight.Bold, color = if (percentage >= 70) Color(0xFF16803C) else Color(0xFFB3261E))
+                }
+            }
+        }
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ResultStat("$correct", "ĐÚNG", Color(0xFF16803C), Modifier.weight(1f))
+                ResultStat("$wrongCount", "SAI", Color(0xFFB3261E), Modifier.weight(1f))
+                ResultStat("$skipped", "BỎ QUA", Color(0xFF9A6700), Modifier.weight(1f))
+                ResultStat("%d:%02d".format(minutes, seconds), "THỜI GIAN", MaterialTheme.colorScheme.primary, Modifier.weight(1f))
+            }
+        }
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = onBackToSets, Modifier.weight(1f)) { Text("Bộ đề") }
+                OutlinedButton(onClick = onRetryAll, Modifier.weight(1f)) { Text("Tất cả câu") }
+                OutlinedButton(onClick = onRetryWrong, enabled = wrongCount > 0, modifier = Modifier.weight(1f)) { Text("Làm lại sai ($wrongCount)") }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ResultStat(value: String, label: String, color: Color, modifier: Modifier = Modifier) {
+    Card(modifier) {
+        Column(Modifier.fillMaxWidth().padding(vertical = 14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(value, fontWeight = FontWeight.Bold, color = color)
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }

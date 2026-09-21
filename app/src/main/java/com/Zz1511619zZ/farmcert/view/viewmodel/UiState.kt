@@ -12,13 +12,18 @@ data class UiState(
     val quizIndex: Int = 0,
     val selectedAnswers: Set<String> = emptySet(),
     val answerSubmitted: Boolean = false,
+    val completedQuestionIndices: Set<Int> = emptySet(),
+    val questionResults: Map<Int, Boolean> = emptyMap(),
     val quizAttempts: List<QuizAttempt> = emptyList(),
-    val correctAnswersCount: Int = 0
+    val correctAnswersCount: Int = 0,
+    val quizStartedAt: Long = 0L,
+    val resultDurationSeconds: Long = 0L
 )
 
 enum class ScreenID {
     HOME,
     QUIZ_LIST,
     QUIZ_SETUP,
-    QUIZ_RUN
+    QUIZ_RUN,
+    RESULT
 }
