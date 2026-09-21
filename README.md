@@ -78,34 +78,9 @@ Trên macOS/Linux:
 ./gradlew :app:assembleDebug
 ```
 
-## Build bản phát hành Google Play
-
-Ứng dụng mới trên Google Play cần được phát hành dưới dạng Android App Bundle (`.aab`). Tạo file `keystore.properties` từ file mẫu `keystore.properties.example`, tạo upload keystore ở ngoài Git, rồi chạy:
-
 ```powershell
 .\gradlew.bat :app:bundleRelease
 ```
-
-File kết quả:
-
-```text
-app/build/outputs/bundle/release/app-release.aab
-```
-
-Không commit keystore, mật khẩu hoặc `keystore.properties` lên GitHub.
-
-## Dữ liệu và quyền riêng tư
-
-Bản hiện tại hoạt động offline. Bộ câu hỏi nằm trong assets; lịch sử điểm được lưu cục bộ trên thiết bị. Ứng dụng không yêu cầu tài khoản và không sử dụng backend, quảng cáo hoặc phân tích người dùng.
-
-Các bản nháp phục vụ Play Console nằm trong thư mục `docs/`:
-
-- `docs/PLAY_STORE_LISTING.md`
-- `docs/PRIVACY_POLICY_DRAFT.md`
-- `docs/DATA_SAFETY_DRAFT.md`
-- `docs/PLAY_RELEASE_CHECKLIST.md`
-
-Trước khi phát hành, cần thay email hỗ trợ và công bố chính sách riêng tư tại một URL HTTPS công khai.
 
 ## Nhánh phát triển
 
