@@ -13,6 +13,7 @@ pipeline {
             }
         }
 
+        /*
         stage('Configure Android SDK') {
             steps {
                 script {
@@ -38,6 +39,7 @@ pipeline {
                 }
             }
         }
+        */
 
         stage('JUnit Test') {
             steps {
