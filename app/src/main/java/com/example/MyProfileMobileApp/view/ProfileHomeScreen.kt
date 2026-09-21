@@ -45,7 +45,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-private val FarmRed = Color(0xFFD5003D)
+private val FarmBlue = Color(0xFF1F4E79)
 private val HomeBackground = Color(0xFFF7F8FA)
 private val CardBorder = Color(0xFFE3E5E8)
 
@@ -60,7 +60,7 @@ fun ProfileHomeScreen(uiViewModel: UIViewModel) {
         topBar = {
             TopAppBar(
                 title = { Text("Farm Cert", color = Color.White, fontWeight = FontWeight.Bold) },
-                colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = FarmRed)
+                colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = FarmBlue)
             )
         }
     ) { padding ->
