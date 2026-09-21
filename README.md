@@ -88,6 +88,17 @@ Chạy toàn bộ unit test:
 
 Các test hiện có kiểm tra việc parse hai ngân hàng câu hỏi thật, chọn câu ngẫu nhiên hoặc theo khoảng, giới hạn số câu, xáo trộn đáp án, chấm câu đơn/multi-select, tính phần trăm, số câu bỏ qua và retry câu sai.
 
+## Jenkins CI/CD
+
+File `Jenkinsfile` ở thư mục gốc mô phỏng pipeline của dự án PR-Profile nhưng phù hợp với cấu trúc Farm Cert hiện tại. Pipeline gồm:
+
+1. Checkout source từ SCM.
+2. Chạy toàn bộ JUnit test bằng `testDebugUnitTest` và xuất kết quả JUnit cho Jenkins.
+3. Build APK debug bằng `assembleDebug`.
+4. Lưu APK và các report làm artifact của build.
+
+Jenkins agent cần có JDK 17, Android SDK Platform 36, Android SDK Build-Tools, Android SDK Platform-Tools và quyền chạy shell script. Bản release `.aab` và upload lên Google Play cần bổ sung credential keystore/Play Console riêng trên Jenkins; không đưa các secret này vào Git.
+
 ```powershell
 .\gradlew.bat :app:bundleRelease
 ```
