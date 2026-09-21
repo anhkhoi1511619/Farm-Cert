@@ -97,6 +97,7 @@ private fun QuizList(quizzes: List<QuizSet>, onOpen: (QuizSet) -> Unit) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun QuizSetup(quiz: QuizSet, onCancel: () -> Unit, onStart: (Boolean, Boolean, String, Int, Int, Int) -> Unit) {
     var shuffleQuestions by remember { mutableStateOf(true) }
