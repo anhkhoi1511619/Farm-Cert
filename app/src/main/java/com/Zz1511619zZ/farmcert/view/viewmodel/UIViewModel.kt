@@ -3,6 +3,7 @@ package com.Zz1511619zZ.farmcert.view.viewmodel
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import com.Zz1511619zZ.farmcert.model.quiz.QuizAttempt
+import com.Zz1511619zZ.farmcert.model.quiz.QuizQuestion
 import com.Zz1511619zZ.farmcert.model.quiz.QuizSet
 import com.Zz1511619zZ.farmcert.utils.QuizAttemptStore
 import com.Zz1511619zZ.farmcert.utils.QuizRepository
@@ -27,6 +28,8 @@ class UIViewModel : ViewModel() {
 
     fun showHome() = _uiState.update { it.copy(screenID = ScreenID.HOME, selectedQuiz = null, answerSubmitted = false) }
 
+    fun showQuizSets() = _uiState.update { it.copy(screenID = ScreenID.QUIZ_LIST, answerSubmitted = false) }
+
     fun startQuiz(randomizeQuestions: Boolean, randomizeAnswers: Boolean, mode: String, count: Int, start: Int, end: Int) {
         val quiz = _uiState.value.selectedQuiz ?: return
         val questions = (if (mode == "random") {
@@ -36,7 +39,34 @@ class UIViewModel : ViewModel() {
             val safeEnd = end.coerceIn(safeStart + 1, quiz.questions.size)
             quiz.questions.subList(safeStart, safeEnd).let { if (randomizeQuestions) it.shuffled() else it }
         }).map { question -> if (randomizeAnswers && question.options.isNotEmpty()) question.copy(options = question.options.shuffled()) else question }
-        _uiState.update { it.copy(quizQuestions = questions, quizIndex = 0, selectedAnswers = emptySet(), answerSubmitted = false, completedQuestionIndices = emptySet(), questionResults = emptyMap(), correctAnswersCount = 0, screenID = ScreenID.QUIZ_RUN) }
+        startQuestions(questions)
+    }
+
+    private fun startQuestions(questions: List<QuizQuestion>) {
+        if (questions.isEmpty()) return
+        _uiState.update {
+            it.copy(
+                quizQuestions = questions,
+                quizIndex = 0,
+                selectedAnswers = emptySet(),
+                answerSubmitted = false,
+                completedQuestionIndices = emptySet(),
+                questionResults = emptyMap(),
+                correctAnswersCount = 0,
+                quizStartedAt = System.currentTimeMillis(),
+                resultDurationSeconds = 0L,
+                screenID = ScreenID.QUIZ_RUN
+            )
+        }
+    }
+
+    fun retryWrongQuestions() {
+        val state = _uiState.value
+        startQuestions(state.quizQuestions.filterIndexed { index, _ -> state.questionResults[index] == false })
+    }
+
+    fun retryAllQuestions() {
+        startQuestions(_uiState.value.quizQuestions)
     }
 
     fun selectAnswer(answer: String) {
@@ -78,9 +108,17 @@ class UIViewModel : ViewModel() {
     private fun finishQuiz() {
         val state = _uiState.value
         val quiz = state.selectedQuiz ?: return
-        val attempt = QuizAttempt(quiz.id, quiz.title, state.correctAnswersCount, state.quizQuestions.size, System.currentTimeMillis())
+        val completedAt = System.currentTimeMillis()
+        val attempt = QuizAttempt(quiz.id, quiz.title, state.correctAnswersCount, state.quizQuestions.size, completedAt)
         val attempts = (state.quizAttempts + attempt).sortedByDescending { it.completedAt }.take(50)
         appContext?.let { QuizAttemptStore.append(it, attempt) }
-        _uiState.update { it.copy(quizAttempts = attempts, selectedQuiz = null, answerSubmitted = false, screenID = ScreenID.HOME) }
+        _uiState.update {
+            it.copy(
+                quizAttempts = attempts,
+                answerSubmitted = false,
+                resultDurationSeconds = ((completedAt - it.quizStartedAt) / 1000L).coerceAtLeast(0L),
+                screenID = ScreenID.RESULT
+            )
+        }
     }
 }

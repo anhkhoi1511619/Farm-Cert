@@ -38,7 +38,7 @@ private fun QuizApp(uiViewModel: UIViewModel) {
     val state by uiViewModel.uiState.collectAsState()
     when (state.screenID) {
         ScreenID.HOME -> ProfileHomeScreen(uiViewModel)
-        ScreenID.QUIZ_LIST, ScreenID.QUIZ_SETUP, ScreenID.QUIZ_RUN -> QuizScreen(uiViewModel)
+        ScreenID.QUIZ_LIST, ScreenID.QUIZ_SETUP, ScreenID.QUIZ_RUN, ScreenID.RESULT -> QuizScreen(uiViewModel)
         else -> ProfileHomeScreen(uiViewModel)
     }
 }

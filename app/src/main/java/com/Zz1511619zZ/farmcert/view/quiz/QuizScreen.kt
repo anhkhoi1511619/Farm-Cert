@@ -75,6 +75,17 @@ fun QuizScreen(uiViewModel: UIViewModel) {
             onJump = uiViewModel::jumpToQuestion,
             onBack = uiViewModel::showHome
         )
+        com.Zz1511619zZ.farmcert.view.viewmodel.ScreenID.RESULT -> QuizResultScreen(
+            title = state.selectedQuiz?.title ?: "Kết quả bài thi",
+            total = state.quizQuestions.size,
+            correct = state.correctAnswersCount,
+            answered = state.completedQuestionIndices.size,
+            durationSeconds = state.resultDurationSeconds,
+            wrongCount = state.questionResults.count { !it.value },
+            onBackToSets = uiViewModel::showQuizSets,
+            onRetryWrong = uiViewModel::retryWrongQuestions,
+            onRetryAll = uiViewModel::retryAllQuestions
+        )
         else -> QuizList(state.quizSets) { uiViewModel.openQuizSetup(it) }
     }
 }
@@ -198,5 +209,68 @@ private fun AnswerCard(text: String, checked: Boolean, answered: Boolean, correc
     Row(Modifier.fillMaxWidth().background(color, RoundedCornerShape(14.dp)).border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(14.dp)).clickable(enabled = !answered, onClick = onClick).padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(if (checked) "◉" else "○", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.width(12.dp)); Text(text)
+    }
+}
+
+@Composable
+private fun QuizResultScreen(
+    title: String,
+    total: Int,
+    correct: Int,
+    answered: Int,
+    durationSeconds: Long,
+    wrongCount: Int,
+    onBackToSets: () -> Unit,
+    onRetryWrong: () -> Unit,
+    onRetryAll: () -> Unit
+) {
+    val skipped = (total - answered).coerceAtLeast(0)
+    val percentage = if (total == 0) 0 else correct * 100 / total
+    val minutes = durationSeconds / 60
+    val seconds = durationSeconds % 60
+    LazyColumn(
+        Modifier.fillMaxSize().padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item {
+            Text("📊 KẾT QUẢ", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            Text("Kết quả bài thi", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+            Text(title, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        item {
+            Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(20.dp)) {
+                Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("$percentage%", style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Bold, color = if (percentage >= 70) Color(0xFF16803C) else Color(0xFFB3261E))
+                    Text("Điểm số", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(12.dp))
+                    Text(if (percentage >= 70) "✓ ĐẠT" else "✕ CHƯA ĐẠT", fontWeight = FontWeight.Bold, color = if (percentage >= 70) Color(0xFF16803C) else Color(0xFFB3261E))
+                }
+            }
+        }
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ResultStat("$correct", "ĐÚNG", Color(0xFF16803C), Modifier.weight(1f))
+                ResultStat("$wrongCount", "SAI", Color(0xFFB3261E), Modifier.weight(1f))
+                ResultStat("$skipped", "BỎ QUA", Color(0xFF9A6700), Modifier.weight(1f))
+                ResultStat("%d:%02d".format(minutes, seconds), "THỜI GIAN", MaterialTheme.colorScheme.primary, Modifier.weight(1f))
+            }
+        }
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = onBackToSets, Modifier.weight(1f)) { Text("Bộ đề") }
+                OutlinedButton(onClick = onRetryAll, Modifier.weight(1f)) { Text("Tất cả câu") }
+                OutlinedButton(onClick = onRetryWrong, enabled = wrongCount > 0, modifier = Modifier.weight(1f)) { Text("Làm lại sai ($wrongCount)") }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ResultStat(value: String, label: String, color: Color, modifier: Modifier = Modifier) {
+    Card(modifier) {
+        Column(Modifier.fillMaxWidth().padding(vertical = 14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(value, fontWeight = FontWeight.Bold, color = color)
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
