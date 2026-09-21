@@ -97,7 +97,9 @@ File `Jenkinsfile` ở thư mục gốc mô phỏng pipeline của dự án PR-P
 3. Build APK debug bằng `assembleDebug`.
 4. Lưu APK và các report làm artifact của build.
 
-Jenkins agent cần có JDK 17, Android SDK Platform 36, Android SDK Build-Tools, Android SDK Platform-Tools và quyền chạy shell script. Bản release `.aab` và upload lên Google Play cần bổ sung credential keystore/Play Console riêng trên Jenkins; không đưa các secret này vào Git.
+Jenkins agent cần có JDK 17, Android SDK Platform 36, Android SDK Build-Tools, Android SDK Platform-Tools và quyền chạy shell script. Pipeline tự tìm SDK theo thứ tự `ANDROID_SDK_ROOT`, `ANDROID_HOME`, `~/Library/Android/sdk` (macOS) và `~/Android/Sdk` (Linux), sau đó tạo `local.properties` tạm thời trong workspace. Nếu SDK nằm ở vị trí khác, hãy cấu hình biến `ANDROID_SDK_ROOT` trên Jenkins agent.
+
+Bản release `.aab` và upload lên Google Play cần bổ sung credential keystore/Play Console riêng trên Jenkins; không đưa các secret này vào Git.
 
 ```powershell
 .\gradlew.bat :app:bundleRelease
