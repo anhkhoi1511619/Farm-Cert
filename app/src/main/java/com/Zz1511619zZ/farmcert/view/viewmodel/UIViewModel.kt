@@ -7,6 +7,8 @@ import com.Zz1511619zZ.farmcert.model.quiz.QuizQuestion
 import com.Zz1511619zZ.farmcert.model.quiz.QuizSet
 import com.Zz1511619zZ.farmcert.utils.QuizAttemptStore
 import com.Zz1511619zZ.farmcert.utils.QuizRepository
+import com.Zz1511619zZ.farmcert.utils.QuizScoring
+import com.Zz1511619zZ.farmcert.utils.QuizSelection
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,13 +34,7 @@ class UIViewModel : ViewModel() {
 
     fun startQuiz(randomizeQuestions: Boolean, randomizeAnswers: Boolean, mode: String, count: Int, start: Int, end: Int) {
         val quiz = _uiState.value.selectedQuiz ?: return
-        val questions = (if (mode == "random") {
-            quiz.questions.shuffled().take(count.coerceIn(1, quiz.questions.size))
-        } else {
-            val safeStart = (start - 1).coerceIn(0, (quiz.questions.size - 1).coerceAtLeast(0))
-            val safeEnd = end.coerceIn(safeStart + 1, quiz.questions.size)
-            quiz.questions.subList(safeStart, safeEnd).let { if (randomizeQuestions) it.shuffled() else it }
-        }).map { question -> if (randomizeAnswers && question.options.isNotEmpty()) question.copy(options = question.options.shuffled()) else question }
+        val questions = QuizSelection.select(quiz, randomizeQuestions, randomizeAnswers, mode, count, start, end)
         startQuestions(questions)
     }
 
@@ -62,7 +58,7 @@ class UIViewModel : ViewModel() {
 
     fun retryWrongQuestions() {
         val state = _uiState.value
-        startQuestions(state.quizQuestions.filterIndexed { index, _ -> state.questionResults[index] == false })
+        startQuestions(QuizScoring.retryWrongQuestions(state.quizQuestions, state.questionResults))
     }
 
     fun retryAllQuestions() {
@@ -84,7 +80,7 @@ class UIViewModel : ViewModel() {
         val state = _uiState.value
         val question = state.quizQuestions.getOrNull(state.quizIndex) ?: return
         if (state.completedQuestionIndices.contains(state.quizIndex)) return
-        val correct = if (state.selectedAnswers == question.correctAnswers) 1 else 0
+        val correct = if (QuizScoring.isCorrect(question, state.selectedAnswers)) 1 else 0
         _uiState.update {
             it.copy(
                 answerSubmitted = true,

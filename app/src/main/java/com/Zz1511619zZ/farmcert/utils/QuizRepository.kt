@@ -12,7 +12,7 @@ object QuizRepository {
         ?.mapNotNull { file -> runCatching { parse(file, context.assets.open("quiz/$file").bufferedReader().use { it.readText() }) }.getOrNull() }
         ?: emptyList()
 
-    private fun parse(fileName: String, source: String): QuizSet {
+    internal fun parse(fileName: String, source: String): QuizSet {
         val jsonText = source.substringAfter("=").trim()
             .removeSuffix(";").trim()
             .replace(Regex(",\\s*([}\\]])"), "$1")

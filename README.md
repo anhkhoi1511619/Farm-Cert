@@ -78,6 +78,16 @@ Trên macOS/Linux:
 ./gradlew :app:assembleDebug
 ```
 
+## Chạy JUnit test
+
+Chạy toàn bộ unit test:
+
+```powershell
+.\gradlew.bat :app:testDebugUnitTest
+```
+
+Các test hiện có kiểm tra việc parse hai ngân hàng câu hỏi thật, chọn câu ngẫu nhiên hoặc theo khoảng, giới hạn số câu, xáo trộn đáp án, chấm câu đơn/multi-select, tính phần trăm, số câu bỏ qua và retry câu sai.
+
 ```powershell
 .\gradlew.bat :app:bundleRelease
 ```

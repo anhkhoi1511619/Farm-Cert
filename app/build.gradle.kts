@@ -80,5 +80,7 @@ dependencies {
     implementation(libs.ui)
     implementation(libs.ui.graphics)
     implementation(libs.material3)
+    testImplementation(libs.junit)
+    testImplementation(libs.json)
     debugImplementation(libs.ui.tooling)
 }
