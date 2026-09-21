@@ -14,7 +14,7 @@ if (releaseKeystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.example.MyProfileMobileApp"
+    namespace = "com.Zz1511619zZ.farmcert"
     compileSdk = 36
 
     defaultConfig {

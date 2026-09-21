@@ -1,7 +1,7 @@
-package com.example.MyProfileMobileApp.utils
+package com.Zz1511619zZ.farmcert.utils
 
 import android.content.Context
-import com.example.MyProfileMobileApp.model.quiz.QuizAttempt
+import com.Zz1511619zZ.farmcert.model.quiz.QuizAttempt
 import org.json.JSONArray
 import org.json.JSONObject
 

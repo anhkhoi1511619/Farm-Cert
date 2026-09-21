@@ -1,4 +1,4 @@
-package com.example.MyProfileMobileApp.model.quiz
+package com.Zz1511619zZ.farmcert.model.quiz
 
 data class QuizAttempt(
     val quizId: String,

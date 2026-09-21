@@ -1,4 +1,4 @@
-package com.example.MyProfileMobileApp
+package com.Zz1511619zZ.farmcert
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -11,11 +11,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import com.example.MyProfileMobileApp.view.ProfileHomeScreen
-import com.example.MyProfileMobileApp.view.quiz.QuizScreen
-import com.example.MyProfileMobileApp.view.theme.JetpackComposeExampleTheme
-import com.example.MyProfileMobileApp.view.viewmodel.ScreenID
-import com.example.MyProfileMobileApp.view.viewmodel.UIViewModel
+import com.Zz1511619zZ.farmcert.view.ProfileHomeScreen
+import com.Zz1511619zZ.farmcert.view.quiz.QuizScreen
+import com.Zz1511619zZ.farmcert.view.theme.JetpackComposeExampleTheme
+import com.Zz1511619zZ.farmcert.view.viewmodel.ScreenID
+import com.Zz1511619zZ.farmcert.view.viewmodel.UIViewModel
 
 class MainActivity : ComponentActivity() {
     private val uiViewModel: UIViewModel by viewModels()

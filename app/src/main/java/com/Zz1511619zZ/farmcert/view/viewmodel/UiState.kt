@@ -1,8 +1,8 @@
-package com.example.MyProfileMobileApp.view.viewmodel
+package com.Zz1511619zZ.farmcert.view.viewmodel
 
-import com.example.MyProfileMobileApp.model.quiz.QuizQuestion
-import com.example.MyProfileMobileApp.model.quiz.QuizSet
-import com.example.MyProfileMobileApp.model.quiz.QuizAttempt
+import com.Zz1511619zZ.farmcert.model.quiz.QuizQuestion
+import com.Zz1511619zZ.farmcert.model.quiz.QuizSet
+import com.Zz1511619zZ.farmcert.model.quiz.QuizAttempt
 
 data class UiState(
     val screenID: ScreenID = ScreenID.HOME,

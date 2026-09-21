@@ -1,4 +1,4 @@
-package com.example.MyProfileMobileApp.view.quiz
+package com.Zz1511619zZ.farmcert.view.quiz
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -45,23 +45,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.MyProfileMobileApp.model.quiz.QuizQuestion
-import com.example.MyProfileMobileApp.model.quiz.QuizSet
-import com.example.MyProfileMobileApp.view.viewmodel.UIViewModel
+import com.Zz1511619zZ.farmcert.model.quiz.QuizQuestion
+import com.Zz1511619zZ.farmcert.model.quiz.QuizSet
+import com.Zz1511619zZ.farmcert.view.viewmodel.UIViewModel
 
 @Composable
 fun QuizScreen(uiViewModel: UIViewModel) {
     val state by uiViewModel.uiState.collectAsState()
     when (state.screenID) {
-        com.example.MyProfileMobileApp.view.viewmodel.ScreenID.QUIZ_LIST -> QuizList(state.quizSets) { uiViewModel.openQuizSetup(it) }
-        com.example.MyProfileMobileApp.view.viewmodel.ScreenID.QUIZ_SETUP -> QuizSetup(
+        com.Zz1511619zZ.farmcert.view.viewmodel.ScreenID.QUIZ_LIST -> QuizList(state.quizSets) { uiViewModel.openQuizSetup(it) }
+        com.Zz1511619zZ.farmcert.view.viewmodel.ScreenID.QUIZ_SETUP -> QuizSetup(
             quiz = state.selectedQuiz ?: return,
             onCancel = uiViewModel::showHome,
             onStart = { randomizeQuestions, randomizeAnswers, mode, count, start, end ->
                 uiViewModel.startQuiz(randomizeQuestions, randomizeAnswers, mode, count, start, end)
             }
         )
-        com.example.MyProfileMobileApp.view.viewmodel.ScreenID.QUIZ_RUN -> QuizRun(
+        com.Zz1511619zZ.farmcert.view.viewmodel.ScreenID.QUIZ_RUN -> QuizRun(
             question = state.quizQuestions.getOrNull(state.quizIndex) ?: return,
             index = state.quizIndex,
             total = state.quizQuestions.size,

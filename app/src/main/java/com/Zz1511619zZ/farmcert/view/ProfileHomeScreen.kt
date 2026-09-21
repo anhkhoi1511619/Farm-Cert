@@ -1,4 +1,4 @@
-package com.example.MyProfileMobileApp.view
+package com.Zz1511619zZ.farmcert.view
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -38,9 +38,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.MyProfileMobileApp.model.quiz.QuizAttempt
-import com.example.MyProfileMobileApp.model.quiz.QuizSet
-import com.example.MyProfileMobileApp.view.viewmodel.UIViewModel
+import com.Zz1511619zZ.farmcert.model.quiz.QuizAttempt
+import com.Zz1511619zZ.farmcert.model.quiz.QuizSet
+import com.Zz1511619zZ.farmcert.view.viewmodel.UIViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
