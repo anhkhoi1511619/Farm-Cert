@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -27,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -42,86 +45,111 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+private val FarmRed = Color(0xFFD5003D)
+private val HomeBackground = Color(0xFFF7F8FA)
+private val CardBorder = Color(0xFFE3E5E8)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileHomeScreen(uiViewModel: UIViewModel) {
     val state by uiViewModel.uiState.collectAsState()
     val best = state.quizAttempts.maxByOrNull { it.percentage }
-    Scaffold(topBar = { TopAppBar(title = { Text("Trang chủ", fontWeight = FontWeight.Bold) }) }) { padding ->
-        LazyColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+
+    Scaffold(
+        containerColor = HomeBackground,
+        topBar = {
+            TopAppBar(
+                title = { Text("Farm Cert", color = Color.White, fontWeight = FontWeight.Bold) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = FarmRed)
+            )
+        }
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             item {
-                SectionTitle("🏆  Chúc mừng thành tích", Color(0xFF8A5A00), Color(0xFFFFF4D6))
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(4.dp))
+                SectionHeading("Chúc mừng thành tích")
                 BestScoreCard(best)
             }
             item {
-                Spacer(Modifier.height(6.dp))
-                SectionTitle("📚  Danh sách bài test", Color(0xFF5E2AA8), Color(0xFFF0E7FF))
-                Text("Chọn một bài test để bắt đầu luyện tập.", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
+                Spacer(Modifier.height(8.dp))
+                SectionHeading("Danh sách bài test")
+                Text("Chọn một bài test để bắt đầu luyện tập.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             items(state.quizSets) { quiz -> QuizHomeCard(quiz) { uiViewModel.openQuizSetup(quiz) } }
             item {
-                Card(Modifier.fillMaxWidth().border(3.dp, Color(0xFF6D91D8), RoundedCornerShape(18.dp)), shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFF2F6FF))) {
-                    Column(Modifier.padding(16.dp)) {
-                        SectionTitle("📊  Các lần thi đã qua", Color(0xFF24539B), Color(0xFFDCE8FF))
-                        Spacer(Modifier.height(10.dp))
-                        if (state.quizAttempts.isEmpty()) {
-                            Text("Chưa có lần thi nào. Hãy chọn một bài test bên dưới để bắt đầu luyện tập.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        } else {
-                            LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                items(state.quizAttempts.take(5)) { AttemptRow(it) }
-                            }
-                        }
+                Spacer(Modifier.height(8.dp))
+                SectionHeading("Các lần thi đã qua")
+                if (state.quizAttempts.isEmpty()) {
+                    EmptyHistoryCard()
+                } else {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        items(state.quizAttempts.take(5)) { AttemptCard(it) }
                     }
                 }
             }
+            item { Spacer(Modifier.height(8.dp)) }
         }
     }
 }
 
 @Composable
-private fun SectionTitle(title: String, textColor: Color, backgroundColor: Color) {
-    Text(title, modifier = Modifier.background(backgroundColor, RoundedCornerShape(10.dp)).padding(horizontal = 14.dp, vertical = 8.dp), color = textColor, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+private fun SectionHeading(title: String) {
+    Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color(0xFF202124), modifier = Modifier.padding(bottom = 6.dp))
 }
 
 @Composable
 private fun BestScoreCard(best: QuizAttempt?) {
-    Card(Modifier.fillMaxWidth().border(3.dp, Color(0xFFE0A62A), RoundedCornerShape(18.dp)), shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF4D6))) {
-        Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.EmojiEvents, null, tint = Color(0xFFE09A00))
-            Spacer(Modifier.width(14.dp))
+    Card(Modifier.fillMaxWidth().border(1.dp, Color(0xFFFFC107), RoundedCornerShape(12.dp)), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFBF0))) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(48.dp).background(Color(0xFFFFE7A3), RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.EmojiEvents, null, tint = Color(0xFFB77900))
+            }
+            Spacer(Modifier.width(12.dp))
             Column {
-                Text(if (best == null) "Bạn chưa có điểm thi" else "Điểm cao nhất: ${best.score}/${best.total} (${best.percentage}%)", fontWeight = FontWeight.Bold)
-                Text(if (best == null) "Hãy bắt đầu bài test đầu tiên!" else best.quizTitle, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(if (best == null) "Bạn chưa có điểm thi" else "Điểm cao nhất ${best.percentage}%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(if (best == null) "Hãy bắt đầu bài test đầu tiên!" else "${best.score}/${best.total} — ${best.quizTitle}", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-        }
-    }
-}
-
-@Composable
-private fun AttemptRow(attempt: QuizAttempt) {
-    Card(Modifier.width(250.dp).border(2.dp, Color(0xFF9CB8EA), RoundedCornerShape(14.dp)), shape = RoundedCornerShape(14.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
-        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text(attempt.quizTitle, fontWeight = FontWeight.SemiBold)
-                Text(SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(attempt.completedAt)), color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Text("${attempt.score}/${attempt.total}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
         }
     }
 }
 
 @Composable
 private fun QuizHomeCard(quiz: QuizSet, onClick: () -> Unit) {
-    Card(Modifier.fillMaxWidth().border(2.dp, Color(0xFFB794E8), RoundedCornerShape(16.dp)).clickable(onClick = onClick), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFFCFAFF)), elevation = CardDefaults.cardElevation(1.dp)) {
-        Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.MenuBook, null, tint = MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.width(14.dp))
+    Card(Modifier.fillMaxWidth().border(1.dp, CardBorder, RoundedCornerShape(12.dp)).clickable(onClick = onClick), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+        Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(44.dp).background(Color(0xFFE4EEFF), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.MenuBook, null, tint = Color(0xFF2D6CDF))
+            }
+            Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(quiz.title, fontWeight = FontWeight.Bold)
+                Text(quiz.title, fontWeight = FontWeight.Bold, color = Color(0xFF202124))
                 Text(quiz.description, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text("${quiz.questions.size} câu", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            Box(Modifier.background(Color(0xFFF0E8FF), RoundedCornerShape(20.dp)).padding(horizontal = 10.dp, vertical = 6.dp)) {
+                Text("${quiz.questions.size} câu", color = Color(0xFF6A35C7), fontWeight = FontWeight.Bold)
+            }
         }
+    }
+}
+
+@Composable
+private fun AttemptCard(attempt: QuizAttempt) {
+    Card(Modifier.width(235.dp).border(1.dp, CardBorder, RoundedCornerShape(12.dp)), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+        Column(Modifier.padding(14.dp)) {
+            Text("${attempt.score}/${attempt.total} điểm", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF24539B))
+            Text("${attempt.percentage}%", color = Color(0xFF16803C), fontWeight = FontWeight.Bold)
+            Text(attempt.quizTitle, maxLines = 2, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(attempt.completedAt)), color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun EmptyHistoryCard() {
+    Card(Modifier.fillMaxWidth().border(1.dp, CardBorder, RoundedCornerShape(12.dp)), shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+        Text("Chưa có lần thi nào. Hãy chọn một bài test để bắt đầu.", modifier = Modifier.padding(16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
