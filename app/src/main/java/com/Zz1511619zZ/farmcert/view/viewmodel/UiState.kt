@@ -13,6 +13,7 @@ data class UiState(
     val selectedAnswers: Set<String> = emptySet(),
     val answerSubmitted: Boolean = false,
     val completedQuestionIndices: Set<Int> = emptySet(),
+    val questionResults: Map<Int, Boolean> = emptyMap(),
     val quizAttempts: List<QuizAttempt> = emptyList(),
     val correctAnswersCount: Int = 0
 )

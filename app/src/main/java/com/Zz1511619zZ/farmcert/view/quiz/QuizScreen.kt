@@ -68,6 +68,7 @@ fun QuizScreen(uiViewModel: UIViewModel) {
             selected = state.selectedAnswers,
             answered = state.answerSubmitted,
             completedQuestionIndices = state.completedQuestionIndices,
+            questionResults = state.questionResults,
             onSelect = uiViewModel::selectAnswer,
             onSubmit = uiViewModel::submitAnswer,
             onNext = uiViewModel::nextQuestion,
@@ -138,7 +139,7 @@ private fun SettingSwitch(title: String, subtitle: String, checked: Boolean, onC
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun QuizRun(question: QuizQuestion, index: Int, total: Int, selected: Set<String>, answered: Boolean, completedQuestionIndices: Set<Int>, onSelect: (String) -> Unit, onSubmit: () -> Unit, onNext: () -> Unit, onJump: (Int) -> Unit, onBack: () -> Unit) {
+private fun QuizRun(question: QuizQuestion, index: Int, total: Int, selected: Set<String>, answered: Boolean, completedQuestionIndices: Set<Int>, questionResults: Map<Int, Boolean>, onSelect: (String) -> Unit, onSubmit: () -> Unit, onNext: () -> Unit, onJump: (Int) -> Unit, onBack: () -> Unit) {
     Scaffold(topBar = { TopAppBar(title = { Text("Question ${index + 1} / $total") }, navigationIcon = { IconButton(onBack) { Icon(Icons.Default.ArrowBack, "Trang chủ") } }) }) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {
@@ -149,18 +150,27 @@ private fun QuizRun(question: QuizQuestion, index: Int, total: Int, selected: Se
                             row.forEach { number ->
                                 val selectedNumber = number == index
                                 val completed = number in completedQuestionIndices
+                                val isCorrect = questionResults[number] == true
+                                val isIncorrect = questionResults[number] == false
                                 val chipColor = when {
                                     selectedNumber -> MaterialTheme.colorScheme.primaryContainer
-                                    completed -> Color(0xFFDDF5E5)
+                                    isCorrect -> Color(0xFFDDF5E5)
+                                    isIncorrect -> Color(0xFFFFE0E0)
                                     else -> MaterialTheme.colorScheme.surfaceVariant
                                 }
                                 val chipBorderColor = when {
                                     selectedNumber -> MaterialTheme.colorScheme.primary
-                                    completed -> Color(0xFF16803C)
+                                    isCorrect -> Color(0xFF16803C)
+                                    isIncorrect -> Color(0xFFB3261E)
                                     else -> MaterialTheme.colorScheme.outlineVariant
                                 }
                                 Box(Modifier.width(38.dp).height(36.dp).background(chipColor, RoundedCornerShape(8.dp)).border(1.dp, chipBorderColor, RoundedCornerShape(8.dp)).clickable { onJump(number) }, contentAlignment = Alignment.Center) {
-                                    Text("${number + 1}", fontWeight = if (selectedNumber || completed) FontWeight.Bold else FontWeight.Normal, color = if (completed && !selectedNumber) Color(0xFF16803C) else MaterialTheme.colorScheme.onSurface)
+                                    Text("${number + 1}", fontWeight = if (selectedNumber || completed) FontWeight.Bold else FontWeight.Normal, color = when {
+                                        selectedNumber -> MaterialTheme.colorScheme.onSurface
+                                        isCorrect -> Color(0xFF16803C)
+                                        isIncorrect -> Color(0xFFB3261E)
+                                        else -> MaterialTheme.colorScheme.onSurface
+                                    })
                                 }
                             }
                         }

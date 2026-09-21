@@ -36,7 +36,7 @@ class UIViewModel : ViewModel() {
             val safeEnd = end.coerceIn(safeStart + 1, quiz.questions.size)
             quiz.questions.subList(safeStart, safeEnd).let { if (randomizeQuestions) it.shuffled() else it }
         }).map { question -> if (randomizeAnswers && question.options.isNotEmpty()) question.copy(options = question.options.shuffled()) else question }
-        _uiState.update { it.copy(quizQuestions = questions, quizIndex = 0, selectedAnswers = emptySet(), answerSubmitted = false, completedQuestionIndices = emptySet(), correctAnswersCount = 0, screenID = ScreenID.QUIZ_RUN) }
+        _uiState.update { it.copy(quizQuestions = questions, quizIndex = 0, selectedAnswers = emptySet(), answerSubmitted = false, completedQuestionIndices = emptySet(), questionResults = emptyMap(), correctAnswersCount = 0, screenID = ScreenID.QUIZ_RUN) }
     }
 
     fun selectAnswer(answer: String) {
@@ -59,6 +59,7 @@ class UIViewModel : ViewModel() {
             it.copy(
                 answerSubmitted = true,
                 completedQuestionIndices = it.completedQuestionIndices + it.quizIndex,
+                questionResults = it.questionResults + (it.quizIndex to (correct == 1)),
                 correctAnswersCount = it.correctAnswersCount + correct
             )
         }
