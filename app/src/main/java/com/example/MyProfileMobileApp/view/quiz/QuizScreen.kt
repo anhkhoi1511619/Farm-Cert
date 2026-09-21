@@ -56,7 +56,7 @@ fun QuizScreen(uiViewModel: UIViewModel) {
         com.example.MyProfileMobileApp.view.viewmodel.ScreenID.QUIZ_LIST -> QuizList(state.quizSets) { uiViewModel.openQuizSetup(it) }
         com.example.MyProfileMobileApp.view.viewmodel.ScreenID.QUIZ_SETUP -> QuizSetup(
             quiz = state.selectedQuiz ?: return,
-            onCancel = uiViewModel::showQuizList,
+            onCancel = uiViewModel::showHome,
             onStart = { randomizeQuestions, randomizeAnswers, mode, count, start, end ->
                 uiViewModel.startQuiz(randomizeQuestions, randomizeAnswers, mode, count, start, end)
             }
@@ -71,7 +71,7 @@ fun QuizScreen(uiViewModel: UIViewModel) {
             onSubmit = uiViewModel::submitAnswer,
             onNext = uiViewModel::nextQuestion,
             onJump = uiViewModel::jumpToQuestion,
-            onBack = uiViewModel::showQuizList
+            onBack = uiViewModel::showHome
         )
         else -> QuizList(state.quizSets) { uiViewModel.openQuizSetup(it) }
     }

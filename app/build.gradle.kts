@@ -1,5 +1,3 @@
-import org.gradle.api.tasks.testing.Test
-import org.gradle.api.tasks.testing.logging.TestLogEvent
 @Suppress("DSL_SCOPE_VIOLATION") // TODO: Remove once KTIJ-19369 is fixed
 plugins {
     alias(libs.plugins.androidApplication)
@@ -17,7 +15,6 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -54,62 +51,14 @@ android {
 
 dependencies {
 
-    // For Jetpack Compose.
-    implementation("com.patrykandpatrick.vico:compose:1.12.0")
-
-    // For `compose`. Creates a `ChartStyle` based on an M2 Material Theme.
-    implementation("com.patrykandpatrick.vico:compose-m2:1.12.0")
-
-    // For `compose`. Creates a `ChartStyle` based on an M3 Material Theme.
-    implementation("com.patrykandpatrick.vico:compose-m3:1.12.0")
-
-    // Houses the core logic for charts and other elements. Included in all other modules.
-    implementation("com.patrykandpatrick.vico:core:1.12.0")
-
-    // For the view system.
-    implementation("com.patrykandpatrick.vico:views:1.12.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
-    annotationProcessor ("androidx.room:room-compiler:2.6.1")
-
-    //Room Library
-    implementation("androidx.room:room-runtime:2.6.1")
-
-    //OkHttp
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-
-    // More icon for UI
     implementation ("androidx.compose.material:material-icons-extended:1.4.3")
 
-    //Tar.Gz File
-    implementation ("org.apache.commons:commons-compress:1.24.0")
-
-
-
     implementation(libs.core.ktx)
-    implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.activity.compose)
     implementation(platform(libs.compose.bom))
     implementation(libs.ui)
     implementation(libs.ui.graphics)
-    implementation(libs.ui.tooling.preview)
     implementation(libs.material3)
-    testImplementation(libs.junit)
-    testImplementation("org.mockito:mockito-core:5.11.0")
-    androidTestImplementation(libs.androidx.test.ext.junit)
-    androidTestImplementation(libs.espresso.core)
-    androidTestImplementation(platform(libs.compose.bom))
-    androidTestImplementation(libs.ui.test.junit4)
     debugImplementation(libs.ui.tooling)
-    debugImplementation(libs.ui.test.manifest)
-}
-tasks.withType<Test>().configureEach {
-    testLogging {
-        events(
-            TestLogEvent.PASSED,
-            TestLogEvent.FAILED,
-            TestLogEvent.SKIPPED
-        )
-
-        showStandardStreams = true
-    }
 }
