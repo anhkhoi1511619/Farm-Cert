@@ -250,7 +250,14 @@ private fun ClickableQuestionText(text: String, selectedWord: String, onTranslat
     }
     ClickableText(
         text = annotated,
-        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+        // ClickableText does not always inherit the Material3 content color on
+        // every device/theme combination. Set it explicitly so the question
+        // remains readable when the system uses dark mode (for example on an
+        // OPPO tablet).
+        style = MaterialTheme.typography.titleLarge.copy(
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold
+        ),
         onClick = { offset -> wordAt(text, offset).takeIf { it.isNotBlank() }?.let(onTranslateWord) }
     )
     Text("Chạm vào một từ để dịch sang tiếng Việt", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
