@@ -82,6 +82,9 @@ fun QuizScreen(uiViewModel: UIViewModel) {
             answered = state.completedQuestionIndices.size,
             durationSeconds = state.resultDurationSeconds,
             wrongCount = state.questionResults.count { !it.value },
+            questions = state.quizQuestions,
+            questionAnswers = state.questionAnswers,
+            questionResults = state.questionResults,
             onBackToSets = uiViewModel::showHome,
             onRetryWrong = uiViewModel::retryWrongQuestions,
             onRetryAll = uiViewModel::retryAllQuestions
@@ -220,6 +223,9 @@ private fun QuizResultScreen(
     answered: Int,
     durationSeconds: Long,
     wrongCount: Int,
+    questions: List<QuizQuestion>,
+    questionAnswers: Map<Int, Set<String>>,
+    questionResults: Map<Int, Boolean>,
     onBackToSets: () -> Unit,
     onRetryWrong: () -> Unit,
     onRetryAll: () -> Unit
@@ -260,6 +266,55 @@ private fun QuizResultScreen(
                 Button(onClick = onBackToSets, Modifier.weight(1f)) { Text("Trang chủ") }
                 OutlinedButton(onClick = onRetryAll, Modifier.weight(1f)) { Text("Tất cả câu") }
                 OutlinedButton(onClick = onRetryWrong, enabled = wrongCount > 0, modifier = Modifier.weight(1f)) { Text("Làm lại sai ($wrongCount)") }
+            }
+        }
+        item {
+            Text("Xem lại bài làm", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Text("Kiểm tra lại các câu đúng và câu sai của bạn.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        items(questions.withIndex().filter { questionResults.containsKey(it.index) }) { entry ->
+            val isCorrect = questionResults[entry.index] == true
+            ReviewQuestionCard(
+                number = entry.index + 1,
+                question = entry.value,
+                selectedAnswers = questionAnswers[entry.index].orEmpty(),
+                isCorrect = isCorrect
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReviewQuestionCard(
+    number: Int,
+    question: QuizQuestion,
+    selectedAnswers: Set<String>,
+    isCorrect: Boolean
+) {
+    val statusColor = if (isCorrect) Color(0xFF16803C) else Color(0xFFB3261E)
+    val backgroundColor = if (isCorrect) Color(0xFFF0FAF3) else Color(0xFFFFF3F2)
+    Card(
+        Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+        shape = RoundedCornerShape(14.dp)
+    ) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                "Câu $number · ${if (isCorrect) "ĐÚNG" else "SAI"}",
+                fontWeight = FontWeight.Bold,
+                color = statusColor
+            )
+            Text(question.question, fontWeight = FontWeight.SemiBold)
+            Text(
+                "Bạn chọn: ${selectedAnswers.ifEmpty { setOf("Chưa chọn") }.joinToString()}",
+                color = if (isCorrect) statusColor else MaterialTheme.colorScheme.onSurface
+            )
+            if (!isCorrect) {
+                Text(
+                    "Đáp án đúng: ${question.correctAnswers.joinToString()}",
+                    color = Color(0xFF16803C),
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
     }

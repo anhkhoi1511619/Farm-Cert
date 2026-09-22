@@ -48,6 +48,7 @@ class UIViewModel : ViewModel() {
                 answerSubmitted = false,
                 completedQuestionIndices = emptySet(),
                 questionResults = emptyMap(),
+                questionAnswers = emptyMap(),
                 correctAnswersCount = 0,
                 quizStartedAt = System.currentTimeMillis(),
                 resultDurationSeconds = 0L,
@@ -86,6 +87,7 @@ class UIViewModel : ViewModel() {
                 answerSubmitted = true,
                 completedQuestionIndices = it.completedQuestionIndices + it.quizIndex,
                 questionResults = it.questionResults + (it.quizIndex to (correct == 1)),
+                questionAnswers = it.questionAnswers + (it.quizIndex to it.selectedAnswers),
                 correctAnswersCount = it.correctAnswersCount + correct
             )
         }

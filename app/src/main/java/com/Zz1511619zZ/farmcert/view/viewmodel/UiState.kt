@@ -14,6 +14,7 @@ data class UiState(
     val answerSubmitted: Boolean = false,
     val completedQuestionIndices: Set<Int> = emptySet(),
     val questionResults: Map<Int, Boolean> = emptyMap(),
+    val questionAnswers: Map<Int, Set<String>> = emptyMap(),
     val quizAttempts: List<QuizAttempt> = emptyList(),
     val correctAnswersCount: Int = 0,
     val quizStartedAt: Long = 0L,
