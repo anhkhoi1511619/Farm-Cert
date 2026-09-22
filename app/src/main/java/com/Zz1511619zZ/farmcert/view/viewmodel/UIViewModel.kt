@@ -10,7 +10,7 @@ import com.Zz1511619zZ.farmcert.utils.QuizAttemptStore
 import com.Zz1511619zZ.farmcert.utils.QuizRepository
 import com.Zz1511619zZ.farmcert.utils.QuizScoring
 import com.Zz1511619zZ.farmcert.utils.QuizSelection
-import com.Zz1511619zZ.farmcert.utils.FreeTranslationRepository
+import com.Zz1511619zZ.farmcert.utils.LmStudioTranslationRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -92,7 +92,7 @@ class UIViewModel : ViewModel() {
         _uiState.update { it.copy(selectedTranslationWord = cleanWord, translationText = "", isTranslating = true, translationError = null) }
         viewModelScope.launch {
             runCatching {
-                withContext(Dispatchers.IO) { FreeTranslationRepository.translateEnglishToVietnamese(cleanWord) }
+                withContext(Dispatchers.IO) { LmStudioTranslationRepository.translateEnglishToVietnamese(cleanWord) }
             }.onSuccess { translated ->
                 _uiState.update { it.copy(translationText = translated, isTranslating = false) }
             }.onFailure { error ->

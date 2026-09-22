@@ -25,6 +25,7 @@ com.Zz1511619zZ.farmcert
 - Hiển thị điểm số, số câu đúng và thời gian làm bài.
 - Lưu lịch sử điểm cục bộ trên thiết bị.
 - Không yêu cầu đăng nhập và không phụ thuộc backend.
+- Dịch từ được chạm bằng model local qua LM Studio.
 
 ## Kiến trúc thư mục
 
@@ -102,6 +103,17 @@ Pipeline gồm:
 Jenkins agent cần có JDK 17, Android SDK Platform 36, Android SDK Build-Tools, Android SDK Platform-Tools và quyền chạy shell script. Khi bật pipeline, Jenkins agent cần tự cung cấp SDK location thông qua cấu hình node hoặc `local.properties` của workspace.
 
 Bản release `.aab` và upload lên Google Play cần bổ sung credential keystore/Play Console riêng trên Jenkins; không đưa các secret này vào Git.
+
+## Dịch bằng LM Studio
+
+Tính năng dịch nhanh gọi LM Studio qua mạng LAN:
+
+```text
+GET  http://192.168.3.1:5172/api/v1/models
+POST http://192.168.3.1:5172/api/v1/chat
+```
+
+Ứng dụng ưu tiên model `google/gemma-3-4b`, sau đó tìm model Gemma 3 4B trong danh sách model, rồi mới dùng model LLM đầu tiên nếu model đó không có. LM Studio phải bật server trên địa chỉ LAN, cho phép thiết bị Android truy cập cổng `5172`, và model phải được load sẵn hoặc bật chế độ tự load. Điện thoại và máy chạy LM Studio phải cùng mạng Wi-Fi.
 
 ```powershell
 .\gradlew.bat :app:bundleRelease
