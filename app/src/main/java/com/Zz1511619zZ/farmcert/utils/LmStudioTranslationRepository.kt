@@ -6,7 +6,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 object LmStudioTranslationRepository {
-    private const val BASE_URL = "http://192.168.3.1:5172"
+    private const val BASE_URL = "https://2khj1mwr-5172.jpe1.devtunnels.ms"
     private const val DEFAULT_MODEL = "google/gemma-3-4b"
 
     fun translateEnglishToVietnamese(text: String): String {
