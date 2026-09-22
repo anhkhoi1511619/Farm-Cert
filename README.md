@@ -108,11 +108,6 @@ Bản release `.aab` và upload lên Google Play cần bổ sung credential keys
 
 Tính năng dịch nhanh gọi LM Studio qua mạng LAN:
 
-```text
-GET  https://2khj1mwr-5172.jpe1.devtunnels.ms/api/v1/models
-POST https://2khj1mwr-5172.jpe1.devtunnels.ms/api/v1/chat
-```
-
 Ứng dụng ưu tiên model `google/gemma-3-4b`, sau đó tìm model Gemma 3 4B trong danh sách model, rồi mới dùng model LLM đầu tiên nếu model đó không có. LM Studio phải bật server trên địa chỉ LAN, cho phép thiết bị Android truy cập cổng `5172`, và model phải được load sẵn hoặc bật chế độ tự load. Điện thoại và máy chạy LM Studio phải cùng mạng Wi-Fi.
 
 ```powershell
