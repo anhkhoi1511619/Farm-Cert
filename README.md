@@ -1,6 +1,8 @@
 # Farm Cert
 
-> Ứng dụng Android luyện thi CCAR-P và CCDV-F, hoạt động offline và lưu lịch sử điểm trên thiết bị.
+![Farm Cert feature graphic](docs/store-assets/farm-cert-feature-1024x500.png)
+
+> Ứng dụng Android hỗ trợ tự học và luyện thi CCAR-P và CCDV-F với bài test tùy chỉnh, chấm điểm và lịch sử kết quả.
 
 ## Tổng quan
 
@@ -24,8 +26,8 @@ com.Zz1511619zZ.farmcert
 - Chọn đáp án và xem đáp án đúng sau khi hoàn thành.
 - Hiển thị điểm số, số câu đúng và thời gian làm bài.
 - Lưu lịch sử điểm cục bộ trên thiết bị.
-- Không yêu cầu đăng nhập và không phụ thuộc backend.
-- Dịch từ được chạm bằng model local qua LM Studio.
+- Không yêu cầu đăng nhập.
+- Dịch từ được chạm bằng model qua LM Studio được cấu hình.
 
 ## Kiến trúc thư mục
 
@@ -104,6 +106,39 @@ Jenkins agent cần có JDK 17, Android SDK Platform 36, Android SDK Build-Tools
 
 Bản release `.aab` và upload lên Google Play cần bổ sung credential keystore/Play Console riêng trên Jenkins; không đưa các secret này vào Git.
 
+## Google Play Store listing
+
+Tên hiển thị: **Farm Cert**
+
+Mô tả ngắn:
+
+> Luyện thi CCAR-P và CCDV-F với bài test tùy chỉnh, chấm điểm và lịch sử.
+
+Farm Cert hỗ trợ tự học và luyện tập cho các chứng chỉ Anthropic Claude Certified Architect – Professional (CCAR-P) và Anthropic Claude Certified Developer – Foundations (CCDV-F). Ứng dụng không đại diện hoặc được chứng nhận bởi Anthropic.
+
+Tính năng chính:
+
+- Bộ câu hỏi CCAR-P và CCDV-F được tích hợp sẵn.
+- Chọn ngẫu nhiên N câu hoặc chọn một khoảng câu cố định.
+- Xáo trộn câu hỏi và đáp án.
+- Theo dõi câu đúng, câu sai, câu chưa làm và xem kết quả sau bài thi.
+- Làm lại toàn bộ bài hoặc chỉ các câu trả lời sai.
+- Lưu điểm cao nhất và lịch sử làm bài trên thiết bị.
+- Không yêu cầu đăng nhập.
+- Chạm vào một từ trong câu hỏi để yêu cầu dịch sang tiếng Việt qua LM Studio.
+
+Icon và feature graphic đã chuẩn bị trong thư mục [`docs/store-assets`](docs/store-assets):
+
+![Farm Cert icon](docs/store-assets/farm-cert-icon-512.png)
+
+- [Icon 512×512 PNG](docs/store-assets/farm-cert-icon-512.png)
+- [Feature graphic 1024×500 PNG](docs/store-assets/farm-cert-feature-1024x500.png)
+- [Bản listing đầy đủ](docs/PLAY_STORE_LISTING.md)
+
+Ảnh chụp màn hình Home, thiết lập bài test, màn hình làm bài và kết quả cần được chụp từ bản release thật trên thiết bị hoặc emulator. Không dùng ảnh giao diện web thay cho ảnh ứng dụng.
+
+Email hỗ trợ cần được thay bằng email chính thức trước khi gửi Play Console.
+
 ## Dịch bằng LM Studio
 
 Tính năng dịch nhanh gọi LM Studio qua mạng LAN:
@@ -113,7 +148,7 @@ GET  https://2khj1mwr-5172.jpe1.devtunnels.ms/api/v1/models
 POST https://2khj1mwr-5172.jpe1.devtunnels.ms/api/v1/chat
 ```
 
-Ứng dụng ưu tiên model `google/gemma-3-4b`, sau đó tìm model Gemma 3 4B trong danh sách model, rồi mới dùng model LLM đầu tiên nếu model đó không có. LM Studio phải bật server trên địa chỉ LAN, cho phép thiết bị Android truy cập cổng `5172`, và model phải được load sẵn hoặc bật chế độ tự load. Điện thoại và máy chạy LM Studio phải cùng mạng Wi-Fi.
+Ứng dụng ưu tiên model `google/gemma-3-4b`, sau đó tìm model Gemma 3 4B trong danh sách model, rồi mới dùng model LLM đầu tiên nếu model đó không có. Endpoint Dev Tunnel phải còn hoạt động và model phải được load sẵn hoặc bật chế độ tự load. Từ được chọn sẽ được gửi tới endpoint này để tạo bản dịch tiếng Việt.
 
 ```powershell
 .\gradlew.bat :app:bundleRelease
@@ -121,4 +156,4 @@ POST https://2khj1mwr-5172.jpe1.devtunnels.ms/api/v1/chat
 
 ## Nhánh phát triển
 
-Nhánh UI và chuẩn bị phát hành hiện tại là `codex/profile-ui-refresh`.
+Nhánh UI và chuẩn bị phát hành hiện tại là `codex/review-quiz-results`.
