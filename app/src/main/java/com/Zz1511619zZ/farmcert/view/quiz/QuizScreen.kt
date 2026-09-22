@@ -3,6 +3,7 @@ package com.Zz1511619zZ.farmcert.view.quiz
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,6 +45,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.Zz1511619zZ.farmcert.model.quiz.QuizQuestion
 import com.Zz1511619zZ.farmcert.model.quiz.QuizSet
@@ -69,10 +74,15 @@ fun QuizScreen(uiViewModel: UIViewModel) {
             answered = state.answerSubmitted,
             completedQuestionIndices = state.completedQuestionIndices,
             questionResults = state.questionResults,
+            selectedTranslationWord = state.selectedTranslationWord,
+            translationText = state.translationText,
+            isTranslating = state.isTranslating,
+            translationError = state.translationError,
             onSelect = uiViewModel::selectAnswer,
             onSubmit = uiViewModel::submitAnswer,
             onNext = uiViewModel::nextQuestion,
             onJump = uiViewModel::jumpToQuestion,
+            onTranslateWord = uiViewModel::translateSelectedWord,
             onBack = uiViewModel::showHome
         )
         com.Zz1511619zZ.farmcert.view.viewmodel.ScreenID.RESULT -> QuizResultScreen(
@@ -153,7 +163,7 @@ private fun SettingSwitch(title: String, subtitle: String, checked: Boolean, onC
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun QuizRun(question: QuizQuestion, index: Int, total: Int, selected: Set<String>, answered: Boolean, completedQuestionIndices: Set<Int>, questionResults: Map<Int, Boolean>, onSelect: (String) -> Unit, onSubmit: () -> Unit, onNext: () -> Unit, onJump: (Int) -> Unit, onBack: () -> Unit) {
+private fun QuizRun(question: QuizQuestion, index: Int, total: Int, selected: Set<String>, answered: Boolean, completedQuestionIndices: Set<Int>, questionResults: Map<Int, Boolean>, selectedTranslationWord: String, translationText: String, isTranslating: Boolean, translationError: String?, onSelect: (String) -> Unit, onSubmit: () -> Unit, onNext: () -> Unit, onJump: (Int) -> Unit, onTranslateWord: (String) -> Unit, onBack: () -> Unit) {
     Scaffold(topBar = { TopAppBar(title = { Text("Question ${index + 1} / $total") }, navigationIcon = { IconButton(onBack) { Icon(Icons.Default.ArrowBack, "Trang chủ") } }) }) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {
@@ -191,7 +201,27 @@ private fun QuizRun(question: QuizQuestion, index: Int, total: Int, selected: Se
                     }
                 }
             }
-            item { Text(question.question, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ClickableQuestionText(question.question, selectedTranslationWord, onTranslateWord)
+                    if (selectedTranslationWord.isNotBlank()) {
+                        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
+                            Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text("Dịch từ: $selectedTranslationWord", fontWeight = FontWeight.Bold)
+                                Text(
+                                    when {
+                                        isTranslating -> "Đang dịch..."
+                                        translationError != null -> "Không thể dịch: $translationError"
+                                        translationText.isNotBlank() -> translationText
+                                        else -> ""
+                                    },
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
+                        }
+                    }
+                }
+            }
             if (question.type == "yesno" || question.type == "dropdown") {
                 items(question.statements) { statement -> AnswerCard(statement, selected.contains(statement), answered, false) { onSelect(statement) } }
             } else {
@@ -205,6 +235,39 @@ private fun QuizRun(question: QuizQuestion, index: Int, total: Int, selected: Se
         }
     }
 }
+
+@Composable
+private fun ClickableQuestionText(text: String, selectedWord: String, onTranslateWord: (String) -> Unit) {
+    val start = if (selectedWord.isBlank()) -1 else text.indexOf(selectedWord, ignoreCase = false)
+    val annotated = buildAnnotatedString {
+        if (start >= 0) {
+            append(text.substring(0, start))
+            withStyle(SpanStyle(background = Color(0xFFBBD7FF))) { append(text.substring(start, start + selectedWord.length)) }
+            append(text.substring(start + selectedWord.length))
+        } else {
+            append(text)
+        }
+    }
+    ClickableText(
+        text = annotated,
+        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+        onClick = { offset -> wordAt(text, offset).takeIf { it.isNotBlank() }?.let(onTranslateWord) }
+    )
+    Text("Chạm vào một từ để dịch sang tiếng Việt", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+}
+
+private fun wordAt(text: String, offset: Int): String {
+    if (text.isEmpty()) return ""
+    val position = offset.coerceIn(0, text.lastIndex)
+    if (text[position].isWhitespace()) return ""
+    var start = position
+    var end = position + 1
+    while (start > 0 && !text[start - 1].isWhitespace() && !text[start - 1].isWordSeparator()) start--
+    while (end < text.length && !text[end].isWhitespace() && !text[end].isWordSeparator()) end++
+    return text.substring(start, end).trim()
+}
+
+private fun Char.isWordSeparator(): Boolean = !isLetterOrDigit() && this != '-' && this != '\''
 
 @Composable
 private fun AnswerCard(text: String, checked: Boolean, answered: Boolean, correct: Boolean, onClick: () -> Unit) {

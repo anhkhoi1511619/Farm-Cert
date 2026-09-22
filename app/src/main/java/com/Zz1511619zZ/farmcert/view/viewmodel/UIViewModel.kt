@@ -2,6 +2,7 @@ package com.Zz1511619zZ.farmcert.view.viewmodel
 
 import android.content.Context
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.Zz1511619zZ.farmcert.model.quiz.QuizAttempt
 import com.Zz1511619zZ.farmcert.model.quiz.QuizQuestion
 import com.Zz1511619zZ.farmcert.model.quiz.QuizSet
@@ -9,6 +10,10 @@ import com.Zz1511619zZ.farmcert.utils.QuizAttemptStore
 import com.Zz1511619zZ.farmcert.utils.QuizRepository
 import com.Zz1511619zZ.farmcert.utils.QuizScoring
 import com.Zz1511619zZ.farmcert.utils.QuizSelection
+import com.Zz1511619zZ.farmcert.utils.FreeTranslationRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -52,6 +57,10 @@ class UIViewModel : ViewModel() {
                 correctAnswersCount = 0,
                 quizStartedAt = System.currentTimeMillis(),
                 resultDurationSeconds = 0L,
+                selectedTranslationWord = "",
+                translationText = "",
+                isTranslating = false,
+                translationError = null,
                 screenID = ScreenID.QUIZ_RUN
             )
         }
@@ -74,6 +83,21 @@ class UIViewModel : ViewModel() {
                 if (state.selectedAnswers.contains(answer)) state.selectedAnswers - answer else state.selectedAnswers + answer
             } else setOf(answer)
             state.copy(selectedAnswers = next)
+        }
+    }
+
+    fun translateSelectedWord(word: String) {
+        val cleanWord = word.trim()
+        if (cleanWord.isEmpty()) return
+        _uiState.update { it.copy(selectedTranslationWord = cleanWord, translationText = "", isTranslating = true, translationError = null) }
+        viewModelScope.launch {
+            runCatching {
+                withContext(Dispatchers.IO) { FreeTranslationRepository.translateEnglishToVietnamese(cleanWord) }
+            }.onSuccess { translated ->
+                _uiState.update { it.copy(translationText = translated, isTranslating = false) }
+            }.onFailure { error ->
+                _uiState.update { it.copy(isTranslating = false, translationError = error.message ?: "Không thể dịch lúc này") }
+            }
         }
     }
 

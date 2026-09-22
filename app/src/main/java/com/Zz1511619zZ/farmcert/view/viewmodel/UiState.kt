@@ -18,7 +18,11 @@ data class UiState(
     val quizAttempts: List<QuizAttempt> = emptyList(),
     val correctAnswersCount: Int = 0,
     val quizStartedAt: Long = 0L,
-    val resultDurationSeconds: Long = 0L
+    val resultDurationSeconds: Long = 0L,
+    val selectedTranslationWord: String = "",
+    val translationText: String = "",
+    val isTranslating: Boolean = false,
+    val translationError: String? = null
 )
 
 enum class ScreenID {
