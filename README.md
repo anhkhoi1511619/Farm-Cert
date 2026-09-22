@@ -25,7 +25,6 @@ com.Zz1511619zZ.farmcert
 - Hiển thị điểm số, số câu đúng và thời gian làm bài.
 - Lưu lịch sử điểm cục bộ trên thiết bị.
 - Không yêu cầu đăng nhập và không phụ thuộc backend.
-- Hiển thị câu hỏi tiếng Anh kèm bản dịch tiếng Việt tham khảo bên dưới.
 
 ## Kiến trúc thư mục
 
@@ -88,8 +87,6 @@ Chạy toàn bộ unit test:
 ```
 
 Các test hiện có kiểm tra việc parse hai ngân hàng câu hỏi thật, chọn câu ngẫu nhiên hoặc theo khoảng, giới hạn số câu, xáo trộn đáp án, chấm câu đơn/multi-select, tính phần trăm, số câu bỏ qua và retry câu sai.
-
-Bản dịch câu hỏi được lưu trong `app/src/main/assets/quiz/quiz-translations-vi.js`, dùng ID bộ đề và số thứ tự câu để ghép với dữ liệu tiếng Anh. Nếu một câu chưa có bản dịch, ứng dụng chỉ hiển thị tiếng Anh và vẫn hoạt động bình thường.
 
 ## Jenkins CI/CD
 
