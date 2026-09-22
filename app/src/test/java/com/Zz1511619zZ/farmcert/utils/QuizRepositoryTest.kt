@@ -19,12 +19,13 @@ class QuizRepositoryTest {
             };
         """.trimIndent()
 
-        val quiz = QuizRepository.parse("sample.js", source)
+        val quiz = QuizRepository.parse("sample.js", source, mapOf("1" to "2 + 2 bằng bao nhiêu?"))
 
         assertEquals("sample", quiz.id)
         assertEquals("Sample exam", quiz.title)
         assertEquals(1, quiz.questions.size)
         assertEquals(setOf("4"), quiz.questions.single().correctAnswers)
+        assertEquals("2 + 2 bằng bao nhiêu?", quiz.questions.single().questionVi)
     }
 
     @Test

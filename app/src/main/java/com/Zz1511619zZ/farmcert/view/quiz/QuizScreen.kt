@@ -191,7 +191,14 @@ private fun QuizRun(question: QuizQuestion, index: Int, total: Int, selected: Se
                     }
                 }
             }
-            item { Text(question.question, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(question.question, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    if (question.questionVi.isNotBlank()) {
+                        Text(question.questionVi, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
             if (question.type == "yesno" || question.type == "dropdown") {
                 items(question.statements) { statement -> AnswerCard(statement, selected.contains(statement), answered, false) { onSelect(statement) } }
             } else {
@@ -305,6 +312,9 @@ private fun ReviewQuestionCard(
                 color = statusColor
             )
             Text(question.question, fontWeight = FontWeight.SemiBold)
+            if (question.questionVi.isNotBlank()) {
+                Text(question.questionVi, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
             Text(
                 "Bạn chọn: ${selectedAnswers.ifEmpty { setOf("Chưa chọn") }.joinToString()}",
                 color = if (isCorrect) statusColor else MaterialTheme.colorScheme.onSurface
