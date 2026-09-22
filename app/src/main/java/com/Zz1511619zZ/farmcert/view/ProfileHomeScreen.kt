@@ -18,6 +18,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.MenuBook
@@ -36,10 +38,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.Zz1511619zZ.farmcert.model.quiz.QuizAttempt
 import com.Zz1511619zZ.farmcert.model.quiz.QuizSet
+import com.Zz1511619zZ.farmcert.R
 import com.Zz1511619zZ.farmcert.view.viewmodel.UIViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -59,7 +63,17 @@ fun ProfileHomeScreen(uiViewModel: UIViewModel) {
         containerColor = HomeBackground,
         topBar = {
             TopAppBar(
-                title = { Text("Farm Cert", color = Color.White, fontWeight = FontWeight.Bold) },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Image(
+                            painter = painterResource(R.drawable.farm_cert_icon),
+                            contentDescription = "Biểu tượng Farm Cert",
+                            modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp))
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text("Farm Cert", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                },
                 colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = FarmBlue)
             )
         }
