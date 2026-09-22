@@ -71,6 +71,12 @@ Mở project bằng Android Studio, chọn Gradle JDK là `Embedded JDK` hoặc 
 
 Trên Windows:
 
+## Bản iOS SwiftUI
+
+Project iOS độc lập nằm trong thư mục [`ios/FarmCert`](ios/FarmCert). Bản này đọc chung hai database `ccar-p.js` và `ccdv-f.js`, đồng thời triển khai Home, thiết lập bài test, làm bài, chấm điểm, retry câu sai, lịch sử kết quả và dịch từ qua LM Studio bằng SwiftUI.
+
+Mở file [`FarmCert.xcodeproj`](ios/FarmCert/FarmCert.xcodeproj) trên macOS bằng Xcode. Bản iOS yêu cầu iOS 16 trở lên; cần macOS/Xcode và Apple Developer account để chạy trên thiết bị thật hoặc phát hành TestFlight.
+
 ```powershell
 .\gradlew.bat :app:assembleDebug
 ```
