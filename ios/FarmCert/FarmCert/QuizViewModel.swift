@@ -1,6 +1,8 @@
 import Foundation
 import Combine
+#if canImport(UIKit)
 import UIKit
+#endif
 
 @MainActor
 final class QuizViewModel: ObservableObject {
@@ -72,6 +74,7 @@ final class QuizViewModel: ObservableObject {
     func backHome() { screen = .home; selectedSet = nil }
 
     func translateCopiedWord() {
+#if canImport(UIKit)
         guard let copied = UIPasteboard.general.string?.trimmingCharacters(in: .whitespacesAndNewlines), !copied.isEmpty else { return }
         translationWord = copied; isTranslating = true; translation = ""
         Task {
@@ -79,5 +82,8 @@ final class QuizViewModel: ObservableObject {
             catch { translation = "Không thể dịch lúc này." }
             isTranslating = false
         }
+#else
+        translation = "Tính năng clipboard chỉ khả dụng trên iOS."
+#endif
     }
 }
