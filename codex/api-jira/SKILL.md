@@ -375,6 +375,32 @@ python3 jira_tool.py create \
 python3 jira_tool.py get KAN-123
 ```
 
+### Update content
+
+Update the summary:
+
+```bash
+python3 jira_tool.py update KAN-123 \
+  --summary "Updated task title"
+```
+
+Update the description:
+
+```bash
+python3 jira_tool.py update KAN-123 \
+  --description "Updated task description."
+```
+
+Update both fields:
+
+```bash
+python3 jira_tool.py update KAN-123 \
+  --summary "Updated task title" \
+  --description "Updated task description."
+```
+
+The command uses `PUT /rest/api/3/issue/{issueKey}`. The description is converted to Atlassian Document Format automatically.
+
 ### List transitions
 
 ```bash
@@ -401,6 +427,8 @@ Typical workflow:
 Create Task
     ↓
 Get Task
+    ↓
+Update content when needed
     ↓
 List available transitions
     ↓
