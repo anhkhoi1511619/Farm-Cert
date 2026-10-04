@@ -6,3 +6,6 @@ keystore.properties
 release-keystore/
 *.jks
 *.keystore
+.env
+.env.*
+!.env.example
