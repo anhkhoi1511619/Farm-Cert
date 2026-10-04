@@ -145,6 +145,41 @@ def get_issue(issue_key):
     print(f"URL      : {get_config()[0]}/browse/{result.get('key')}")
 
 
+def update_issue(issue_key, summary=None, description=None):
+    fields = {}
+
+    if summary is not None:
+        fields["summary"] = summary
+
+    if description is not None:
+        fields["description"] = {
+            "type": "doc",
+            "version": 1,
+            "content": [
+                {
+                    "type": "paragraph",
+                    "content": [{"type": "text", "text": description}],
+                }
+            ],
+        }
+
+    if not fields:
+        print("ERROR: provide --summary and/or --description")
+        sys.exit(1)
+
+    request(
+        "PUT",
+        f"/rest/api/3/issue/{urllib.parse.quote(issue_key)}",
+        {"fields": fields},
+    )
+
+    print(f"Issue updated successfully: {issue_key}")
+    if summary is not None:
+        print(f"Summary: {summary}")
+    if description is not None:
+        print("Description updated.")
+
+
 def get_transitions(issue_key):
     result = request(
         "GET",
@@ -265,6 +300,11 @@ def main():
     p_get = sub.add_parser("get", help="Get issue information")
     p_get.add_argument("issue_key", help="Example: KAN-1")
 
+    p_update = sub.add_parser("update", help="Update issue summary or description")
+    p_update.add_argument("issue_key", help="Example: KAN-1")
+    p_update.add_argument("--summary", help="New issue summary")
+    p_update.add_argument("--description", help="New issue description")
+
     p_transitions = sub.add_parser(
         "transitions",
         help="List available status transitions",
@@ -286,6 +326,8 @@ def main():
         add_comment(args.issue_key, args.comment)
     elif args.command == "get":
         get_issue(args.issue_key)
+    elif args.command == "update":
+        update_issue(args.issue_key, args.summary, args.description)
     elif args.command == "transitions":
         get_transitions(args.issue_key)
 
