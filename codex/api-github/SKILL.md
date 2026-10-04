@@ -34,6 +34,22 @@ Get one pull request:
 python codex\github_tool.py get-pr 12
 ```
 
+The `get-pr` output includes `State`, `Merged`, and `Merged at`.
+
+Check merge status explicitly:
+
+```powershell
+python codex\github_tool.py merge-status 12
+```
+
+Interpretation:
+
+```text
+Merged: True  -> the pull request was merged
+Merged: False -> it has not been merged
+Merged at: null -> no merge has occurred
+```
+
 Create a pull request:
 
 ```powershell
