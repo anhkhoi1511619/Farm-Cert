@@ -93,9 +93,20 @@ def get_pr(args):
     print(f"Number : #{result['number']}")
     print(f"Title  : {result['title']}")
     print(f"State  : {result['state']}")
+    print(f"Merged : {result.get('merged')}")
+    print(f"Merged at: {result.get('merged_at')}")
     print(f"Head   : {result['head']['ref']}")
     print(f"Base   : {result['base']['ref']}")
     print(f"URL    : {result['html_url']}")
+
+
+def merge_status(args):
+    result = request("GET", repo_path(f"/pulls/{args.number}"))
+    print(f"Pull request #{result['number']}")
+    print(f"State     : {result['state']}")
+    print(f"Merged    : {result.get('merged')}")
+    print(f"Merged at : {result.get('merged_at')}")
+    print(f"URL       : {result['html_url']}")
 
 
 def list_prs(args):
@@ -127,6 +138,23 @@ def comment_pr(args):
     print(f"Comment added to PR #{args.number}: {result['id']}")
 
 
+def format_ai_comment(content, proposal, done, not_done, confirmation):
+    return (
+        "@Đây là comment tự động được tạo ra, không phải do con người viết\n\n"
+        f"Nội dung: {content}\n\n"
+        f"Đề xuất: {proposal}\n\n"
+        f"Đã làm gì: {done}\n\n"
+        f"Chưa làm gì: {not_done}\n\n"
+        f"Điểm cần xác nhận: {confirmation}"
+    )
+
+
+def ai_comment_pr(args):
+    comment_pr(argparse.Namespace(number=args.number, comment=format_ai_comment(
+        args.content, args.proposal, args.done, args.not_done, args.confirmation
+    )))
+
+
 def merge_pr(args):
     data = {"merge_method": args.method}
     if args.commit_title:
@@ -154,6 +182,12 @@ def comment_commit(args):
     print(f"Comment added to commit {args.sha}: {result['id']}")
 
 
+def ai_comment_commit(args):
+    comment_commit(argparse.Namespace(sha=args.sha, comment=format_ai_comment(
+        args.content, args.proposal, args.done, args.not_done, args.confirmation
+    )))
+
+
 def commit_file(args):
     path = "/contents/" + "/".join(urllib.parse.quote(part) for part in args.path.replace("\\", "/").split("/"))
     data = {"message": args.message, "content": base64.b64encode(args.content.encode("utf-8")).decode("ascii"), "branch": args.branch}
@@ -174,12 +208,15 @@ def main():
 
     p = sub.add_parser("create-pr"); p.add_argument("--head", required=True); p.add_argument("--base", required=True); p.add_argument("--title", required=True); p.add_argument("--body"); p.add_argument("--draft", action="store_true"); p.set_defaults(func=create_pr)
     p = sub.add_parser("get-pr"); p.add_argument("number", type=int); p.set_defaults(func=get_pr)
+    p = sub.add_parser("merge-status", help="Check whether a pull request was merged"); p.add_argument("number", type=int); p.set_defaults(func=merge_status)
     p = sub.add_parser("list-prs"); p.add_argument("--state", choices=["open", "closed", "all"], default="open"); p.add_argument("--limit", type=int, default=30); p.set_defaults(func=list_prs)
     p = sub.add_parser("update-pr"); p.add_argument("number", type=int); p.add_argument("--title"); p.add_argument("--body"); p.add_argument("--state", choices=["open", "closed"]); p.add_argument("--base"); p.set_defaults(func=update_pr)
     p = sub.add_parser("comment-pr"); p.add_argument("number", type=int); p.add_argument("comment"); p.set_defaults(func=comment_pr)
+    p = sub.add_parser("ai-comment-pr", help="Add a structured AI-authored comment to a PR"); p.add_argument("number", type=int); p.add_argument("--content", required=True); p.add_argument("--proposal", required=True); p.add_argument("--done", required=True); p.add_argument("--not-done", required=True); p.add_argument("--confirmation", required=True); p.set_defaults(func=ai_comment_pr)
     p = sub.add_parser("merge-pr"); p.add_argument("number", type=int); p.add_argument("--method", choices=["merge", "squash", "rebase"], default="merge"); p.add_argument("--commit-title"); p.add_argument("--commit-message"); p.set_defaults(func=merge_pr)
     p = sub.add_parser("get-commit"); p.add_argument("sha"); p.set_defaults(func=get_commit)
     p = sub.add_parser("comment-commit"); p.add_argument("sha"); p.add_argument("comment"); p.set_defaults(func=comment_commit)
+    p = sub.add_parser("ai-comment-commit", help="Add a structured AI-authored comment to a commit"); p.add_argument("sha"); p.add_argument("--content", required=True); p.add_argument("--proposal", required=True); p.add_argument("--done", required=True); p.add_argument("--not-done", required=True); p.add_argument("--confirmation", required=True); p.set_defaults(func=ai_comment_commit)
     p = sub.add_parser("commit-file"); p.add_argument("path"); p.add_argument("--content", required=True); p.add_argument("--branch", required=True); p.add_argument("--message", required=True); p.set_defaults(func=commit_file)
 
     args = parser.parse_args()

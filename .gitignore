@@ -1,6 +1,11 @@
 .gradle/
+.gradle-user-home/
 build/
 **/build/
+__pycache__/
+*.py[cod]
+*.class
+*.TAG
 local.properties
 keystore.properties
 release-keystore/

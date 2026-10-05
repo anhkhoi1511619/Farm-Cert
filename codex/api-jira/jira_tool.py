@@ -47,10 +47,12 @@ def get_config():
     return base_url, email, token
 
 
-def request(method, path, data=None):
+def request(method, path, data=None, query=None):
     base_url, email, token = get_config()
 
     url = base_url + path
+    if query:
+        url += "?" + urllib.parse.urlencode(query)
     credentials = f"{email}:{token}".encode("utf-8")
     auth = base64.b64encode(credentials).decode("ascii")
 
@@ -270,6 +272,76 @@ def add_comment(issue_key, comment):
         print(f"Comment ID: {result['id']}")
 
 
+def format_ai_comment(content, proposal, done, not_done, confirmation):
+    return (
+        "@Đây là comment tự động được tạo ra, không phải do con người viết\n\n"
+        f"Nội dung: {content}\n\n"
+        f"Đề xuất: {proposal}\n\n"
+        f"Đã làm gì: {done}\n\n"
+        f"Chưa làm gì: {not_done}\n\n"
+        f"Điểm cần xác nhận: {confirmation}"
+    )
+
+
+def link_pull_request(issue_key, pull_request_url, branch=None, status=None):
+    encoded_issue = urllib.parse.quote(issue_key)
+    existing = request("GET", f"/rest/api/3/issue/{encoded_issue}/remotelink")
+    links = existing if isinstance(existing, list) else existing.get("remoteIssueLinks", [])
+    if not any((link.get("object") or {}).get("url") == pull_request_url for link in links):
+        data = {
+            "object": {
+                "url": pull_request_url,
+                "title": f"GitHub Pull Request ({branch})" if branch else "GitHub Pull Request",
+                "summary": f"GitHub pull request - {status}" if status else "GitHub pull request",
+                "icon": {"url16x16": "https://github.githubassets.com/favicons/favicon.svg", "title": "GitHub"},
+            },
+            "relationship": "implements",
+            "application": {"type": "github", "name": "GitHub"},
+        }
+        result = request("POST", f"/rest/api/3/issue/{encoded_issue}/remotelink", data)
+        print(f"Jira Development link added to {issue_key}: {pull_request_url}")
+        if result.get("id"):
+            print(f"Remote link ID: {result['id']}")
+    else:
+        print(f"Remote link already exists on {issue_key}: {pull_request_url}")
+    details = [f"Pull Request: {pull_request_url}"]
+    if branch:
+        details.append(f"Branch: {branch}")
+    if status:
+        details.append(f"PR Status: {status}")
+    add_comment(issue_key, format_ai_comment(
+        "Đã tạo liên kết GitHub Pull Request cho task.",
+        "Review pull request trước khi merge vào main.",
+        "\n".join(details),
+        "Pull Request chưa được xác nhận merge.",
+        "Xác nhận nội dung PR và quyết định merge.",
+    ))
+
+
+def list_remote_links(issue_key):
+    encoded_issue = urllib.parse.quote(issue_key)
+    result = request("GET", f"/rest/api/3/issue/{encoded_issue}/remotelink")
+    links = result if isinstance(result, list) else result.get("remoteIssueLinks", [])
+    for link in links:
+        obj = link.get("object") or {}
+        print(f"{obj.get('title', 'Link')}: {obj.get('url', '')}")
+
+
+def update_progress(issue_key, percentage, note=None):
+    if percentage < 0 or percentage > 100:
+        print("ERROR: percentage must be between 0 and 100")
+        sys.exit(1)
+    target_status = "Done" if percentage == 100 else "In Progress"
+    change_status(issue_key, target_status)
+    add_comment(issue_key, format_ai_comment(
+        f"Cập nhật tiến độ task lên {percentage}%.",
+        note or "Tiếp tục xử lý theo workflow Jira/GitHub.",
+        f"Đã chuyển status sang {target_status}.",
+        "Các bước tiếp theo chưa hoàn tất." if percentage < 100 else "Không còn bước bắt buộc nào theo workflow.",
+        "Xác nhận kết quả và các bước tiếp theo." if percentage < 100 else "Xác nhận task đã hoàn tất.",
+    ))
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Jira Cloud API helper for project KAN"
@@ -296,6 +368,20 @@ def main():
     p_comment = sub.add_parser("comment", help="Add a comment")
     p_comment.add_argument("issue_key", help="Example: KAN-1")
     p_comment.add_argument("comment", help="Comment text")
+
+    p_link_pr = sub.add_parser("link-pr", help="Link a GitHub PR in Jira Development")
+    p_link_pr.add_argument("issue_key")
+    p_link_pr.add_argument("pull_request_url")
+    p_link_pr.add_argument("--branch")
+    p_link_pr.add_argument("--status")
+
+    p_links = sub.add_parser("links", help="List Jira Development links")
+    p_links.add_argument("issue_key")
+
+    p_progress = sub.add_parser("progress", help="Update Jira progress and matching status")
+    p_progress.add_argument("issue_key")
+    p_progress.add_argument("percentage", type=int, choices=range(0, 101))
+    p_progress.add_argument("--note")
 
     p_get = sub.add_parser("get", help="Get issue information")
     p_get.add_argument("issue_key", help="Example: KAN-1")
@@ -324,6 +410,12 @@ def main():
         change_status(args.issue_key, args.target_status)
     elif args.command == "comment":
         add_comment(args.issue_key, args.comment)
+    elif args.command == "link-pr":
+        link_pull_request(args.issue_key, args.pull_request_url, args.branch, args.status)
+    elif args.command == "links":
+        list_remote_links(args.issue_key)
+    elif args.command == "progress":
+        update_progress(args.issue_key, args.percentage, args.note)
     elif args.command == "get":
         get_issue(args.issue_key)
     elif args.command == "update":
