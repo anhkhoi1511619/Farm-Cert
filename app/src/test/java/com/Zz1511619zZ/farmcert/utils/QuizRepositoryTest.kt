@@ -28,6 +28,23 @@ class QuizRepositoryTest {
     }
 
     @Test
+    fun preservesCompoundQuestionRenderingDataAndAnswerOrder() {
+        val quiz = QuizRepository.parse("compound.js", """
+            const sample = {
+              "title": "Compound",
+              "questions": [
+                {"type":"yesno","question":"Claims","statements":["claim one","claim two"],"answers":["Yes","No"]},
+                {"type":"dropdown","question":"Classify","statements":["first","second"],"dropdowns":[["A","B"],["A","B"]],"answers":["A","A"]}
+              ]
+            };
+        """.trimIndent())
+
+        assertEquals(listOf("claim one", "claim two"), quiz.questions[0].statements)
+        assertEquals(listOf("A", "B"), quiz.questions[1].dropdownOptions[0])
+        assertEquals(listOf("A", "A"), quiz.questions[1].correctAnswerValues)
+    }
+
+    @Test
     fun bundledQuizFilesContainExpectedQuestionBanks() {
         val assets = listOf(
             File("src/main/assets/quiz"),

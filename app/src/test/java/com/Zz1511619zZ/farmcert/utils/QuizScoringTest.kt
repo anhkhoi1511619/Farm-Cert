@@ -26,6 +26,24 @@ class QuizScoringTest {
     }
 
     @Test
+    fun scoresCompoundAnswersByStatementIdentityAndExactOrder() {
+        val dropdown = QuizQuestion(
+            1,
+            "Classify",
+            type = "dropdown",
+            statements = listOf("first", "second"),
+            dropdownOptions = listOf(listOf("A", "B"), listOf("A", "B")),
+            correctAnswers = setOf("A"),
+            correctAnswerValues = listOf("A", "A")
+        )
+        val separator = QuizScoring.SELECTION_SEPARATOR
+
+        assertTrue(QuizScoring.isCorrect(dropdown, setOf("0${separator}A", "1${separator}A")))
+        assertFalse(QuizScoring.isCorrect(dropdown, setOf("0${separator}A", "1${separator}B")))
+        assertFalse(QuizScoring.isCorrect(dropdown, setOf("1${separator}A", "0${separator}A", "2${separator}A")))
+    }
+
+    @Test
     fun calculatesPercentageAndSkippedQuestions() {
         assertEquals(60, QuizScoring.percentage(6, 10))
         assertEquals(0, QuizScoring.percentage(0, 0))

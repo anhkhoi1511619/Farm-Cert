@@ -26,7 +26,8 @@ object QuizRepository {
             val answers = item.optJSONArray("answers").toStrings().toSet()
             val dropdownOptions = item.optJSONArray("dropdowns").toLists()
             QuizQuestion(index + 1, item.optString("question"), options, answers,
-                item.optString("type", "single"), statements, dropdownOptions)
+                item.optString("type", "single"), statements, dropdownOptions,
+                item.optJSONArray("answers").toStrings())
         }
         val id = fileName.substringBeforeLast('.')
         return QuizSet(id, root.optString("title", id), root.optString("description", ""), parsed)
