@@ -5,6 +5,7 @@ import com.Zz1511619zZ.farmcert.model.quiz.QuizSet
 import com.Zz1511619zZ.farmcert.model.quiz.QuizAttempt
 
 data class UiState(
+    val quizDataState: QuizDataState = QuizDataState.Loading,
     val screenID: ScreenID = ScreenID.HOME,
     val quizSets: List<QuizSet> = emptyList(),
     val selectedQuiz: QuizSet? = null,
@@ -24,6 +25,12 @@ data class UiState(
     val isTranslating: Boolean = false,
     val translationError: String? = null
 )
+
+sealed interface QuizDataState {
+    object Loading : QuizDataState
+    object Success : QuizDataState
+    data class Error(val message: String) : QuizDataState
+}
 
 enum class ScreenID {
     HOME,

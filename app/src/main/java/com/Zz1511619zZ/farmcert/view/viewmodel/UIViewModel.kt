@@ -26,9 +26,36 @@ class UIViewModel : ViewModel() {
 
     fun loadQuizData(context: Context) {
         appContext = context.applicationContext
-        _uiState.update {
-            it.copy(quizSets = QuizRepository.loadBundledQuizSets(context), quizAttempts = QuizAttemptStore.load(context), screenID = ScreenID.HOME)
+        _uiState.update { it.copy(quizDataState = QuizDataState.Loading) }
+        viewModelScope.launch {
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    QuizData(
+                        quizSets = QuizRepository.loadBundledQuizSets(context.applicationContext),
+                        quizAttempts = QuizAttemptStore.load(context.applicationContext)
+                    )
+                }
+            }.onSuccess { data ->
+                _uiState.update {
+                    it.copy(
+                        quizDataState = QuizDataState.Success,
+                        quizSets = data.quizSets,
+                        quizAttempts = data.quizAttempts,
+                        screenID = ScreenID.HOME
+                    )
+                }
+            }.onFailure { error ->
+                _uiState.update {
+                    it.copy(
+                        quizDataState = QuizDataState.Error(error.message ?: "Không thể tải dữ liệu bài test")
+                    )
+                }
+            }
         }
+    }
+
+    fun retryLoadQuizData() {
+        appContext?.let(::loadQuizData)
     }
 
     fun openQuizSetup(quiz: QuizSet) = _uiState.update { it.copy(selectedQuiz = quiz, screenID = ScreenID.QUIZ_SETUP) }
@@ -144,3 +171,8 @@ class UIViewModel : ViewModel() {
         }
     }
 }
+
+private data class QuizData(
+    val quizSets: List<QuizSet>,
+    val quizAttempts: List<QuizAttempt>
+)
