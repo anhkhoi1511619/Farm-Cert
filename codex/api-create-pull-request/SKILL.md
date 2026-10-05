@@ -68,5 +68,6 @@ creates the pull request.
 ## Expected result
 
 The PR should contain only the source changes produced from the Jira proposal.
-The final Jira comment contains the PR URL. If Codex produces no source change,
+The final Jira comment is explicitly marked as AI-authored and contains the PR
+URL. If Codex produces no source change,
 the command stops and does not create an empty PR.

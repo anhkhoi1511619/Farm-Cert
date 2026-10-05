@@ -272,6 +272,17 @@ def add_comment(issue_key, comment):
         print(f"Comment ID: {result['id']}")
 
 
+def format_ai_comment(content, proposal, done, not_done, confirmation):
+    return (
+        "@Đây là comment tự động được tạo ra, không phải do con người viết\n\n"
+        f"Nội dung: {content}\n\n"
+        f"Đề xuất: {proposal}\n\n"
+        f"Đã làm gì: {done}\n\n"
+        f"Chưa làm gì: {not_done}\n\n"
+        f"Điểm cần xác nhận: {confirmation}"
+    )
+
+
 def link_pull_request(issue_key, pull_request_url, branch=None, status=None):
     encoded_issue = urllib.parse.quote(issue_key)
     existing = request("GET", f"/rest/api/3/issue/{encoded_issue}/remotelink")
@@ -298,7 +309,13 @@ def link_pull_request(issue_key, pull_request_url, branch=None, status=None):
         details.append(f"Branch: {branch}")
     if status:
         details.append(f"PR Status: {status}")
-    add_comment(issue_key, "GitHub pull request created for this Jira issue.\n" + "\n".join(details))
+    add_comment(issue_key, format_ai_comment(
+        "Đã tạo liên kết GitHub Pull Request cho task.",
+        "Review pull request trước khi merge vào main.",
+        "\n".join(details),
+        "Pull Request chưa được xác nhận merge.",
+        "Xác nhận nội dung PR và quyết định merge.",
+    ))
 
 
 def list_remote_links(issue_key):
@@ -316,10 +333,13 @@ def update_progress(issue_key, percentage, note=None):
         sys.exit(1)
     target_status = "Done" if percentage == 100 else "In Progress"
     change_status(issue_key, target_status)
-    message = f"Tiến độ: {percentage}%. Status: {target_status}."
-    if note:
-        message += f" {note}"
-    add_comment(issue_key, message)
+    add_comment(issue_key, format_ai_comment(
+        f"Cập nhật tiến độ task lên {percentage}%.",
+        note or "Tiếp tục xử lý theo workflow Jira/GitHub.",
+        f"Đã chuyển status sang {target_status}.",
+        "Các bước tiếp theo chưa hoàn tất." if percentage < 100 else "Không còn bước bắt buộc nào theo workflow.",
+        "Xác nhận kết quả và các bước tiếp theo." if percentage < 100 else "Xác nhận task đã hoàn tất.",
+    ))
 
 
 def main():

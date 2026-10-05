@@ -759,6 +759,32 @@ the GitHub `merged` field first:
 python .\codex\api-github\github_tool.py merge-status 3
 ```
 
+## AI-authored Jira comments
+
+Comments created by automation must be visibly different from human comments.
+Every AI-generated comment must start with:
+
+```text
+@Đây là comment tự động được tạo ra, không phải do con người viết
+```
+
+Then use this fixed structure:
+
+```text
+Nội dung: ...
+
+Đề xuất: ...
+
+Đã làm gì: ...
+
+Chưa làm gì: ...
+
+Điểm cần xác nhận: ...
+```
+
+Human-authored comments must not receive the AI disclaimer or be rewritten.
+The `progress` and `link-pr` commands already use this format automatically.
+
 ## 19. Source of Project Configuration
 
 The project configuration was obtained from the Jira REST API endpoint for issue creation metadata.
