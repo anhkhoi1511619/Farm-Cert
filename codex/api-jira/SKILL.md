@@ -736,6 +736,29 @@ Finally:
 python3 jira_tool.py status KAN-123 "Done"
 ```
 
+## Progress mapping for pull requests
+
+Use this progress rule when work is implemented through a GitHub pull request:
+
+- A pull request is being created or is open: progress is **70%** and Jira
+  status is `In Progress`.
+- The pull request is confirmed merged into the target branch: progress is
+  **100%** and Jira status is `Done`.
+
+Update Jira with the matching status and a progress comment:
+
+```powershell
+python .\codex\api-jira\jira_tool.py progress KAN-7 70 --note "Pull request is open."
+python .\codex\api-jira\jira_tool.py progress KAN-7 100 --note "Pull request merged into main."
+```
+
+Do not mark 100% merely because a pull request was created or closed; verify
+the GitHub `merged` field first:
+
+```powershell
+python .\codex\api-github\github_tool.py merge-status 3
+```
+
 ## 19. Source of Project Configuration
 
 The project configuration was obtained from the Jira REST API endpoint for issue creation metadata.

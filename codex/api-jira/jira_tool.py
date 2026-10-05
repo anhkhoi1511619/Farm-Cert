@@ -310,6 +310,18 @@ def list_remote_links(issue_key):
         print(f"{obj.get('title', 'Link')}: {obj.get('url', '')}")
 
 
+def update_progress(issue_key, percentage, note=None):
+    if percentage < 0 or percentage > 100:
+        print("ERROR: percentage must be between 0 and 100")
+        sys.exit(1)
+    target_status = "Done" if percentage == 100 else "In Progress"
+    change_status(issue_key, target_status)
+    message = f"Tiến độ: {percentage}%. Status: {target_status}."
+    if note:
+        message += f" {note}"
+    add_comment(issue_key, message)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Jira Cloud API helper for project KAN"
@@ -346,6 +358,11 @@ def main():
     p_links = sub.add_parser("links", help="List Jira Development links")
     p_links.add_argument("issue_key")
 
+    p_progress = sub.add_parser("progress", help="Update Jira progress and matching status")
+    p_progress.add_argument("issue_key")
+    p_progress.add_argument("percentage", type=int, choices=range(0, 101))
+    p_progress.add_argument("--note")
+
     p_get = sub.add_parser("get", help="Get issue information")
     p_get.add_argument("issue_key", help="Example: KAN-1")
 
@@ -377,6 +394,8 @@ def main():
         link_pull_request(args.issue_key, args.pull_request_url, args.branch, args.status)
     elif args.command == "links":
         list_remote_links(args.issue_key)
+    elif args.command == "progress":
+        update_progress(args.issue_key, args.percentage, args.note)
     elif args.command == "get":
         get_issue(args.issue_key)
     elif args.command == "update":

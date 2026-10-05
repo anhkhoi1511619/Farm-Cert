@@ -99,7 +99,10 @@ def run(command, cwd, check=True):
 def set_status(root, python, issue_key):
     if not os.getenv("JIRA_EMAIL") and os.getenv("EMAIL"):
         os.environ["JIRA_EMAIL"] = os.environ["EMAIL"]
-    run([python, str(root / "codex" / "api-jira" / "jira_tool.py"), "status", issue_key, "In Progress"], root)
+    run([
+        python, str(root / "codex" / "api-jira" / "jira_tool.py"), "progress",
+        issue_key, "70", "--note", "Pull request implementation is in progress.",
+    ], root)
 
 
 def create_pr(root, python, branch, base, issue_key, proposal, summary):

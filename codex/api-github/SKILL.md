@@ -34,6 +34,12 @@ Get one pull request:
 python codex\github_tool.py get-pr 12
 ```
 
+Check whether it was merged:
+
+```powershell
+python codex\github_tool.py merge-status 12
+```
+
 Create a pull request:
 
 ```powershell

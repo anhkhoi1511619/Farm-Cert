@@ -93,9 +93,20 @@ def get_pr(args):
     print(f"Number : #{result['number']}")
     print(f"Title  : {result['title']}")
     print(f"State  : {result['state']}")
+    print(f"Merged : {result.get('merged')}")
+    print(f"Merged at: {result.get('merged_at')}")
     print(f"Head   : {result['head']['ref']}")
     print(f"Base   : {result['base']['ref']}")
     print(f"URL    : {result['html_url']}")
+
+
+def merge_status(args):
+    result = request("GET", repo_path(f"/pulls/{args.number}"))
+    print(f"Pull request #{result['number']}")
+    print(f"State     : {result['state']}")
+    print(f"Merged    : {result.get('merged')}")
+    print(f"Merged at : {result.get('merged_at')}")
+    print(f"URL       : {result['html_url']}")
 
 
 def list_prs(args):
@@ -174,6 +185,7 @@ def main():
 
     p = sub.add_parser("create-pr"); p.add_argument("--head", required=True); p.add_argument("--base", required=True); p.add_argument("--title", required=True); p.add_argument("--body"); p.add_argument("--draft", action="store_true"); p.set_defaults(func=create_pr)
     p = sub.add_parser("get-pr"); p.add_argument("number", type=int); p.set_defaults(func=get_pr)
+    p = sub.add_parser("merge-status", help="Check whether a pull request was merged"); p.add_argument("number", type=int); p.set_defaults(func=merge_status)
     p = sub.add_parser("list-prs"); p.add_argument("--state", choices=["open", "closed", "all"], default="open"); p.add_argument("--limit", type=int, default=30); p.set_defaults(func=list_prs)
     p = sub.add_parser("update-pr"); p.add_argument("number", type=int); p.add_argument("--title"); p.add_argument("--body"); p.add_argument("--state", choices=["open", "closed"]); p.add_argument("--base"); p.set_defaults(func=update_pr)
     p = sub.add_parser("comment-pr"); p.add_argument("number", type=int); p.add_argument("comment"); p.set_defaults(func=comment_pr)
