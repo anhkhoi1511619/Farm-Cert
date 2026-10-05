@@ -1,5 +1,10 @@
 import java.util.Properties
 
+val lmStudioBaseUrl = providers.gradleProperty("lmStudioBaseUrl").orNull?.trim().orEmpty()
+val escapedLmStudioBaseUrl = lmStudioBaseUrl
+    .replace("\\", "\\\\")
+    .replace("\"", "\\\"")
+
 @Suppress("DSL_SCOPE_VIOLATION") // TODO: Remove once KTIJ-19369 is fixed
 
 plugins {
@@ -23,6 +28,10 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
+
+        // Configure with -PlmStudioBaseUrl=https://your-lm-studio-host.
+        // An empty value keeps the feature explicitly unavailable by default.
+        buildConfigField("String", "LM_STUDIO_BASE_URL", "\"$escapedLmStudioBaseUrl\"")
 
         vectorDrawables {
             useSupportLibrary = true
@@ -57,6 +66,7 @@ android {
         jvmTarget = "1.8"
     }
     buildFeatures {
+        buildConfig = true
         compose = true
     }
     composeOptions {

@@ -1,16 +1,20 @@
 package com.Zz1511619zZ.farmcert.utils
 
+import com.Zz1511619zZ.farmcert.BuildConfig
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
+import java.net.URI
 import java.net.URL
 
+class LmStudioUnavailableException(message: String) : IllegalStateException(message)
+
 object LmStudioTranslationRepository {
-    private const val BASE_URL = "https://2khj1mwr-5172.jpe1.devtunnels.ms"
     private const val DEFAULT_MODEL = "google/gemma-3-4b"
 
     fun translateEnglishToVietnamese(text: String): String {
         require(text.isNotBlank())
+        baseUrl()
         val model = resolveModel()
         val request = JSONObject()
             .put("model", model)
@@ -46,8 +50,29 @@ object LmStudioTranslationRepository {
         return ""
     }
 
+    internal fun validateEndpoint(endpoint: String): String {
+        val trimmed = endpoint.trim().trimEnd('/')
+        val uri = runCatching { URI(trimmed) }.getOrNull()
+        if (
+            trimmed.isEmpty() ||
+            uri == null ||
+            uri.scheme?.lowercase() !in setOf("http", "https") ||
+            uri.host.isNullOrBlank() ||
+            uri.userInfo != null ||
+            uri.query != null ||
+            uri.fragment != null
+        ) {
+            throw LmStudioUnavailableException(
+                "LM Studio translation is unavailable: configure a valid HTTP(S) endpoint."
+            )
+        }
+        return trimmed
+    }
+
+    private fun baseUrl(): String = validateEndpoint(BuildConfig.LM_STUDIO_BASE_URL)
+
     private fun request(path: String, method: String, body: String? = null): String {
-        val connection = (URL(BASE_URL + path).openConnection() as HttpURLConnection).apply {
+        val connection = (URL(baseUrl() + path).openConnection() as HttpURLConnection).apply {
             requestMethod = method
             connectTimeout = 10_000
             readTimeout = 60_000
