@@ -343,6 +343,9 @@ def update_progress(issue_key, percentage, note=None):
 
 
 def main():
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(
         description="Jira Cloud API helper for project KAN"
     )
