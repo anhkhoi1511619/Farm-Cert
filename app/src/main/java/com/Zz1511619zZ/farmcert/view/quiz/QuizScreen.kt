@@ -24,6 +24,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -53,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import com.Zz1511619zZ.farmcert.model.quiz.QuizQuestion
 import com.Zz1511619zZ.farmcert.model.quiz.QuizSet
 import com.Zz1511619zZ.farmcert.view.viewmodel.UIViewModel
+import com.Zz1511619zZ.farmcert.utils.QuizScoring
 
 @Composable
 fun QuizScreen(uiViewModel: UIViewModel) {
@@ -222,16 +225,99 @@ private fun QuizRun(question: QuizQuestion, index: Int, total: Int, selected: Se
                     }
                 }
             }
-            if (question.type == "yesno" || question.type == "dropdown") {
-                items(question.statements) { statement -> AnswerCard(statement, selected.contains(statement), answered, false) { onSelect(statement) } }
-            } else {
-                items(question.options) { option -> AnswerCard(option, selected.contains(option), answered, question.correctAnswers.contains(option)) { onSelect(option) } }
+            when (question.type) {
+                "yesno" -> items(question.statements.indices.toList()) { statementIndex ->
+                    YesNoAnswerCard(
+                        statement = question.statements[statementIndex],
+                        statementIndex = statementIndex,
+                        selected = selected,
+                        answered = answered,
+                        correctAnswer = question.correctAnswerValues.getOrNull(statementIndex),
+                        onSelect = onSelect
+                    )
+                }
+                "dropdown" -> items(question.statements.indices.toList()) { statementIndex ->
+                    DropdownAnswerCard(
+                        statement = question.statements[statementIndex],
+                        statementIndex = statementIndex,
+                        options = question.dropdownOptions.getOrElse(statementIndex) { emptyList() },
+                        selected = selected,
+                        answered = answered,
+                        correctAnswer = question.correctAnswerValues.getOrNull(statementIndex),
+                        onSelect = onSelect
+                    )
+                }
+                else -> items(question.options) { option -> AnswerCard(option, selected.contains(option), answered, question.correctAnswers.contains(option)) { onSelect(option) } }
             }
             item {
-                if (answered) Text(if (selected == question.correctAnswers) "✓ Chính xác" else "Đáp án đúng: ${question.correctAnswers.joinToString()}", color = if (selected == question.correctAnswers) Color(0xFF16803C) else MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                if (answered) {
+                    val correct = QuizScoring.isCorrect(question, selected)
+                    Text(if (correct) "✓ Chính xác" else "Đáp án đúng: ${question.correctAnswerValues.joinToString()}", color = if (correct) Color(0xFF16803C) else MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                }
                 Spacer(Modifier.height(4.dp))
                 Button(if (answered) onNext else onSubmit, Modifier.fillMaxWidth()) { Text(if (answered) if (index + 1 == total) "Hoàn thành" else "Câu tiếp theo" else "Kiểm tra đáp án") }
             }
+        }
+    }
+}
+
+private fun selectionKey(index: Int, value: String): String =
+    "$index${QuizScoring.SELECTION_SEPARATOR}$value"
+
+@Composable
+private fun YesNoAnswerCard(
+    statement: String,
+    statementIndex: Int,
+    selected: Set<String>,
+    answered: Boolean,
+    correctAnswer: String?,
+    onSelect: (String) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(statement)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf("Yes", "No").forEach { value ->
+                val key = selectionKey(statementIndex, value)
+                Box(Modifier.weight(1f)) {
+                    AnswerCard(value, selected.contains(key), answered, answered && value == correctAnswer) { onSelect(key) }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun DropdownAnswerCard(
+    statement: String,
+    statementIndex: Int,
+    options: List<String>,
+    selected: Set<String>,
+    answered: Boolean,
+    correctAnswer: String?,
+    onSelect: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedValue = options.firstOrNull { selected.contains(selectionKey(statementIndex, it)) }
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(statement)
+        Box {
+            OutlinedButton(onClick = { expanded = true }, enabled = !answered) {
+                Text(selectedValue ?: "Select an answer")
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                options.forEach { value ->
+                    DropdownMenuItem(text = { Text(value) }, onClick = {
+                        expanded = false
+                    onSelect(selectionKey(statementIndex, value))
+                    })
+                }
+            }
+        }
+        if (answered && selectedValue != null && selectedValue == correctAnswer) {
+            Text("✓ $selectedValue", color = Color(0xFF16803C), fontWeight = FontWeight.Bold)
+        } else if (answered && correctAnswer != null) {
+            Text("Đáp án đúng: $correctAnswer", color = Color(0xFF16803C), fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -376,18 +462,25 @@ private fun ReviewQuestionCard(
             )
             Text(question.question, fontWeight = FontWeight.SemiBold)
             Text(
-                "Bạn chọn: ${selectedAnswers.ifEmpty { setOf("Chưa chọn") }.joinToString()}",
+                "Bạn chọn: ${displayAnswers(question, selectedAnswers).ifEmpty { listOf("Chưa chọn") }.joinToString()}",
                 color = if (isCorrect) statusColor else MaterialTheme.colorScheme.onSurface
             )
             if (!isCorrect) {
                 Text(
-                    "Đáp án đúng: ${question.correctAnswers.joinToString()}",
+                    "Đáp án đúng: ${question.correctAnswerValues.joinToString()}",
                     color = Color(0xFF16803C),
                     fontWeight = FontWeight.Medium
                 )
             }
         }
     }
+}
+
+private fun displayAnswers(question: QuizQuestion, selectedAnswers: Set<String>): List<String> {
+    if (question.type != "yesno" && question.type != "dropdown") return selectedAnswers.toList()
+    return selectedAnswers
+        .sortedBy { it.substringBefore(QuizScoring.SELECTION_SEPARATOR).toIntOrNull() ?: Int.MAX_VALUE }
+        .map { it.substringAfter(QuizScoring.SELECTION_SEPARATOR, it) }
 }
 
 @Composable
