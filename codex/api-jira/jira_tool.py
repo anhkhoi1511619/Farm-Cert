@@ -47,10 +47,12 @@ def get_config():
     return base_url, email, token
 
 
-def request(method, path, data=None):
+def request(method, path, data=None, query=None):
     base_url, email, token = get_config()
 
     url = base_url + path
+    if query:
+        url += "?" + urllib.parse.urlencode(query)
     credentials = f"{email}:{token}".encode("utf-8")
     auth = base64.b64encode(credentials).decode("ascii")
 
@@ -270,6 +272,44 @@ def add_comment(issue_key, comment):
         print(f"Comment ID: {result['id']}")
 
 
+def link_pull_request(issue_key, pull_request_url, branch=None, status=None):
+    encoded_issue = urllib.parse.quote(issue_key)
+    existing = request("GET", f"/rest/api/3/issue/{encoded_issue}/remotelink")
+    links = existing if isinstance(existing, list) else existing.get("remoteIssueLinks", [])
+    if not any((link.get("object") or {}).get("url") == pull_request_url for link in links):
+        data = {
+            "object": {
+                "url": pull_request_url,
+                "title": f"GitHub Pull Request ({branch})" if branch else "GitHub Pull Request",
+                "summary": f"GitHub pull request - {status}" if status else "GitHub pull request",
+                "icon": {"url16x16": "https://github.githubassets.com/favicons/favicon.svg", "title": "GitHub"},
+            },
+            "relationship": "implements",
+            "application": {"type": "github", "name": "GitHub"},
+        }
+        result = request("POST", f"/rest/api/3/issue/{encoded_issue}/remotelink", data)
+        print(f"Jira Development link added to {issue_key}: {pull_request_url}")
+        if result.get("id"):
+            print(f"Remote link ID: {result['id']}")
+    else:
+        print(f"Remote link already exists on {issue_key}: {pull_request_url}")
+    details = [f"Pull Request: {pull_request_url}"]
+    if branch:
+        details.append(f"Branch: {branch}")
+    if status:
+        details.append(f"PR Status: {status}")
+    add_comment(issue_key, "GitHub pull request created for this Jira issue.\n" + "\n".join(details))
+
+
+def list_remote_links(issue_key):
+    encoded_issue = urllib.parse.quote(issue_key)
+    result = request("GET", f"/rest/api/3/issue/{encoded_issue}/remotelink")
+    links = result if isinstance(result, list) else result.get("remoteIssueLinks", [])
+    for link in links:
+        obj = link.get("object") or {}
+        print(f"{obj.get('title', 'Link')}: {obj.get('url', '')}")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Jira Cloud API helper for project KAN"
@@ -296,6 +336,15 @@ def main():
     p_comment = sub.add_parser("comment", help="Add a comment")
     p_comment.add_argument("issue_key", help="Example: KAN-1")
     p_comment.add_argument("comment", help="Comment text")
+
+    p_link_pr = sub.add_parser("link-pr", help="Link a GitHub PR in Jira Development")
+    p_link_pr.add_argument("issue_key")
+    p_link_pr.add_argument("pull_request_url")
+    p_link_pr.add_argument("--branch")
+    p_link_pr.add_argument("--status")
+
+    p_links = sub.add_parser("links", help="List Jira Development links")
+    p_links.add_argument("issue_key")
 
     p_get = sub.add_parser("get", help="Get issue information")
     p_get.add_argument("issue_key", help="Example: KAN-1")
@@ -324,6 +373,10 @@ def main():
         change_status(args.issue_key, args.target_status)
     elif args.command == "comment":
         add_comment(args.issue_key, args.comment)
+    elif args.command == "link-pr":
+        link_pull_request(args.issue_key, args.pull_request_url, args.branch, args.status)
+    elif args.command == "links":
+        list_remote_links(args.issue_key)
     elif args.command == "get":
         get_issue(args.issue_key)
     elif args.command == "update":
