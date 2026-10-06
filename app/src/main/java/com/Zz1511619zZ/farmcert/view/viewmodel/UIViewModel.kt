@@ -31,7 +31,7 @@ class UIViewModel : ViewModel() {
             runCatching {
                 withContext(Dispatchers.IO) {
                     QuizData(
-                        quizSets = QuizRepository.loadBundledQuizSets(context.applicationContext),
+                        quizSets = QuizRepository.loadBundledQuizSets(context.applicationContext).getOrThrow(),
                         quizAttempts = QuizAttemptStore.load(context.applicationContext)
                     )
                 }

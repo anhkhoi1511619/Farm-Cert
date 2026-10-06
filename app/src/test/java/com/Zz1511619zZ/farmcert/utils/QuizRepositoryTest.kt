@@ -1,11 +1,28 @@
 package com.Zz1511619zZ.farmcert.utils
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 
 class QuizRepositoryTest {
+    @Test
+    fun malformedQuizFixtureReturnsDiagnosticFailure() {
+        val fixture = listOf(
+            File("src/test/resources/quiz/malformed.js"),
+            File("app/src/test/resources/quiz/malformed.js")
+        ).first { it.isFile }
+
+        val result = QuizRepository.loadQuizSets(listOf("malformed.js")) { fixture.readText() }
+
+        assertTrue(result.isFailure)
+        val error = result.exceptionOrNull() as? QuizRepository.QuizAssetLoadError
+        assertNotNull(error)
+        assertEquals("malformed.js", error?.fileName)
+        assertTrue(error?.message?.contains("malformed.js") == true)
+    }
+
     @Test
     fun parsesQuizJavaScriptFixture() {
         val source = """
