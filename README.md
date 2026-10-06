@@ -1,6 +1,6 @@
 # Farm Cert
 
-> Ứng dụng Android luyện thi CCAR-P và CCDV-F, hoạt động offline và lưu lịch sử điểm trên thiết bị.
+> Ứng dụng Android luyện thi CCAR-F, CCAR-P và CCDV-F, hoạt động offline và lưu lịch sử điểm trên thiết bị.
 
 ## Tổng quan
 
@@ -31,7 +31,7 @@ com.Zz1511619zZ.farmcert
 
 ```text
 app/src/main/
-├── assets/quiz/              # Dữ liệu câu hỏi CCDV-F và CCAR-P
+├── assets/quiz/              # Dữ liệu câu hỏi CCAR-F, CCAR-P và CCDV-F
 ├── java/com/Zz1511619zZ/farmcert/
 │   ├── model/quiz/           # QuizQuestion, QuizSet, QuizAttempt
 │   ├── utils/                # Đọc database assets và lưu lịch sử
@@ -87,7 +87,7 @@ Chạy toàn bộ unit test:
 .\gradlew.bat :app:testDebugUnitTest
 ```
 
-Các test hiện có kiểm tra việc parse hai ngân hàng câu hỏi thật, chọn câu ngẫu nhiên hoặc theo khoảng, giới hạn số câu, xáo trộn đáp án, chấm câu đơn/multi-select, tính phần trăm, số câu bỏ qua và retry câu sai.
+Các test hiện có kiểm tra việc parse ba ngân hàng câu hỏi thật, chọn câu ngẫu nhiên hoặc theo khoảng, giới hạn số câu, xáo trộn đáp án, chấm câu đơn/multi-select, tính phần trăm, số câu bỏ qua và retry câu sai.
 
 ## Jenkins CI/CD
 
