@@ -1,16 +1,48 @@
 package com.Zz1511619zZ.farmcert.utils
 
 import android.content.Context
+import android.util.Log
 import com.Zz1511619zZ.farmcert.model.quiz.QuizQuestion
 import com.Zz1511619zZ.farmcert.model.quiz.QuizSet
 import org.json.JSONArray
 import org.json.JSONObject
 
 object QuizRepository {
-    fun loadBundledQuizSets(context: Context): List<QuizSet> = context.assets.list("quiz")
-        ?.filter { it.endsWith(".js") }
-        ?.mapNotNull { file -> runCatching { parse(file, context.assets.open("quiz/$file").bufferedReader().use { it.readText() }) }.getOrNull() }
-        ?: emptyList()
+    private const val TAG = "QuizRepository"
+
+    fun loadBundledQuizSets(context: Context): Result<List<QuizSet>> {
+        val files = context.assets.list("quiz")?.filter { it.endsWith(".js") } ?: emptyList()
+        val result = loadQuizSets(files) { file ->
+            context.assets.open("quiz/$file").bufferedReader().use { it.readText() }
+        }
+        result.exceptionOrNull()?.let { error ->
+            if (error is QuizAssetLoadError) {
+                Log.e(TAG, "Failed to load quiz asset: ${error.fileName}")
+            }
+        }
+        return result
+    }
+
+    internal fun loadQuizSets(files: Iterable<String>, read: (String) -> String): Result<List<QuizSet>> =
+        runCatching {
+            files.sorted().map { file ->
+                runCatching { parse(file, read(file)) }
+                    .getOrElse { cause -> throw QuizAssetLoadError(file, cause) }
+            }
+        }
+
+    internal class QuizAssetLoadError(fileName: String, cause: Throwable) : Exception(
+        "Không thể đọc bộ câu hỏi từ tệp ${safeFileName(fileName)}. Hãy cập nhật ứng dụng hoặc báo lỗi cho nhóm phát triển.",
+        cause
+    ) {
+        val fileName: String = safeFileName(fileName)
+    }
+
+    private fun safeFileName(fileName: String): String = fileName
+        .substringAfterLast('/')
+        .substringAfterLast('\\')
+        .filter { it.isLetterOrDigit() || it == '.' || it == '-' || it == '_' }
+        .ifEmpty { "không xác định" }
 
     internal fun parse(fileName: String, source: String): QuizSet {
         val jsonText = source.substringAfter("=").trim()
