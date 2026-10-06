@@ -34,13 +34,17 @@ class QuizRepositoryTest {
             File("app/src/main/assets/quiz")
         ).first { it.isDirectory }
         val ccar = QuizRepository.parse("ccar-p.js", assets.resolve("ccar-p.js").readText())
+        val ccarFoundations = QuizRepository.parse("ccar-f.js", assets.resolve("ccar-f.js").readText())
         val ccdv = QuizRepository.parse("ccdv-f.js", assets.resolve("ccdv-f.js").readText())
 
         assertEquals("ccar-p", ccar.id)
+        assertEquals("ccar-f", ccarFoundations.id)
         assertEquals("ccdv-f", ccdv.id)
         assertTrue(ccar.questions.isNotEmpty())
+        assertEquals(162, ccarFoundations.questions.size)
         assertTrue(ccdv.questions.isNotEmpty())
         assertTrue(ccar.questions.all { it.question.isNotBlank() })
+        assertTrue(ccarFoundations.questions.all { it.question.isNotBlank() && it.options.size == 4 && it.correctAnswers.size == 1 })
         assertTrue(ccdv.questions.all { it.question.isNotBlank() })
     }
 }
