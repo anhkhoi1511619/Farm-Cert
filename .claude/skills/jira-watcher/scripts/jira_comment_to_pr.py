@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Turn actionable Jira comments into isolated code changes and pull requests.
 
-The program polls Jira, lets any author trigger the workflow, and uses Codex
-to interpret and implement the requested source change.  Each execution uses
-a fresh Git branch/worktree, pushes that branch, and creates a GitHub PR.
+The program polls Jira, lets any author trigger the workflow, and runs Claude
+Code headless (`claude -p`) to interpret and implement the requested source
+change.  Each execution uses a fresh Git branch/worktree under .worktrees/,
+pushes that branch, creates a GitHub PR and links it in Jira.
+
+Comments written by automation (the AI disclaimer prefix) never trigger it.
 """
 
 import argparse
@@ -12,7 +15,6 @@ import re
 import shutil
 import subprocess
 import sys
-import tempfile
 import time
 from pathlib import Path
 
@@ -30,15 +32,25 @@ _NON_ACTIONABLE = re.compile(
     r"^(ok|okay|thanks|thank you|đồng ý|tôi đồng ý|ack|noted|đã rõ|👍|😂|lol)[.!\s]*$",
     re.IGNORECASE,
 )
-_AUTOMATION_PREFIX = "đã tạo pr tự động:"
+_AUTOMATION_PREFIXES = (
+    "@đây là comment tự động",  # AI-authored comments from jira_tool.py
+    "đã tạo pr tự động:",       # legacy automation comment
+)
+SKILLS_DIR = Path(__file__).resolve().parents[2]
+JIRA_TOOL = SKILLS_DIR / "jira" / "scripts" / "jira_tool.py"
+GITHUB_TOOL = SKILLS_DIR / "github-pr" / "scripts" / "github_tool.py"
+DEFAULT_ALLOWED_TOOLS = "Bash(./gradlew:*),Bash(gradlew.bat:*),Bash(git status:*),Bash(git diff:*)"
+GIT_NAME = os.getenv("GIT_COMMIT_NAME", "Info: Zz1511619zZ")
+GIT_EMAIL = os.getenv("GIT_COMMIT_EMAIL", "Zz1511619zZ@gmail.com")
 
 
-def run(command, cwd=None, env=None, check=True, capture=True):
+def run(command, cwd=None, env=None, check=True, capture=True, input_text=None):
     print("$ " + " ".join(str(part) for part in command), flush=True)
     result = subprocess.run(
-        command,
+        [str(part) for part in command],
         cwd=str(cwd) if cwd else None,
         env=env,
+        input=input_text,
         text=True,
         encoding="utf-8",
         errors="replace",
@@ -58,18 +70,21 @@ def load_config():
     # The existing project .env uses EMAIL, while jira_tool.py uses JIRA_EMAIL.
     if not os.getenv("JIRA_EMAIL") and os.getenv("EMAIL"):
         os.environ["JIRA_EMAIL"] = os.environ["EMAIL"]
-    root = Path(__file__).resolve().parents[2]
+    root = Path(subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"], cwd=str(SKILLS_DIR),
+        text=True, capture_output=True, check=True,
+    ).stdout.strip())
     python = sys.executable
-    codex_exe = os.getenv("CODEX_EXE") or shutil.which("codex") or "codex"
-    base_branch = os.getenv("CODEX_BASE_BRANCH", "main")
-    return root, python, codex_exe, base_branch
+    claude_exe = os.getenv("CLAUDE_EXE") or shutil.which("claude") or "claude"
+    base_branch = os.getenv("BASE_BRANCH", "main")
+    return root, python, claude_exe, base_branch
 
 
 def actionable(text):
     normalized = " " + " ".join(text.lower().split()) + " "
     if not normalized.strip() or _NON_ACTIONABLE.match(normalized.strip()):
         return False
-    if normalized.strip().startswith(_AUTOMATION_PREFIX):
+    if normalized.strip().startswith(_AUTOMATION_PREFIXES):
         return False
     return any(word in normalized for word in ACTION_WORDS)
 
@@ -89,7 +104,7 @@ def create_branch(root, branch, base_branch, worktree):
     run(["git", "worktree", "add", "-b", branch, str(worktree), f"origin/{base_branch}"], cwd=root)
 
 
-def codex_edit(codex_exe, worktree, context, comment, output_file):
+def claude_edit(claude_exe, worktree, context, comment):
     prompt = f"""You are implementing a requested change in a Git repository.
 
 {context}
@@ -98,10 +113,13 @@ New Jira comment:
 {comment}
 
 Interpret the comment in context and modify the source code to fulfill it. Inspect the repository before editing. Keep the change focused, do not edit .env or secrets, and run the most relevant available tests or checks. Do not create a branch, commit, push, or open a pull request; leave the changes in this worktree. If the comment is not a concrete code request, make no changes and explain why in your final response."""
-    run([
-        codex_exe, "exec", "--cd", str(worktree), "--approve-for-me",
-        "--ephemeral", "-o", str(output_file), prompt,
-    ], cwd=worktree)
+    allowed = [tool.strip() for tool in os.getenv("CLAUDE_WATCHER_ALLOWED_TOOLS", DEFAULT_ALLOWED_TOOLS).split(",") if tool.strip()]
+    # The prompt goes through stdin so multi-line text survives Windows .cmd shims.
+    result = run(
+        [claude_exe, "-p", "--permission-mode", "acceptEdits", "--allowedTools", *allowed],
+        cwd=worktree, input_text=prompt,
+    )
+    return result.stdout or ""
 
 
 def changed_files(worktree):
@@ -119,65 +137,64 @@ def changed_files(worktree):
     return files
 
 
-def create_pr(python, root, branch, base_branch, issue_key, comment, codex_output):
+def create_pr(python, root, branch, base_branch, issue_key, comment, claude_output):
     title = f"Implement request from {issue_key}"
     body = (
         f"Automated implementation requested by a Jira comment on {issue_key}.\n\n"
         f"Comment:\n{comment}\n\n"
-        "Codex implementation summary:\n" + codex_output[-4000:]
+        "Claude implementation summary:\n" + claude_output[-4000:] + "\n\n"
+        "🤖 Generated with [Claude Code](https://claude.com/claude-code)"
     )
-    github_tool = root / "codex" / "api-github" / "github_tool.py"
     result = run([
-        python, str(github_tool), "create-pr", "--head", branch,
+        python, GITHUB_TOOL, "create-pr", "--head", branch,
         "--base", base_branch, "--title", title, "--body", body,
     ], cwd=root)
     match = re.search(r"URL:\s*(\S+)", result.stdout)
     return match.group(1) if match else "(PR URL unavailable; inspect GitHub output)"
 
 
-def process_comment(root, python, codex_exe, base_branch, issue, comment, dry_run=False):
+def process_comment(root, python, claude_exe, base_branch, issue, comment, dry_run=False):
     comment_text = jira.flatten_adf(comment.get("body", {})).strip()
     if not actionable(comment_text):
         print(f"[{issue['key']}] ignored non-actionable comment.", flush=True)
         return False
 
     issue_key = issue["key"]
-    branch = f"codex/{issue_key.lower()}-comment-{int(time.time())}"
-    worktree = Path(tempfile.mkdtemp(prefix=f"jira-{issue_key.lower()}-"))
-    output_handle, output_name = tempfile.mkstemp(prefix="codex-last-message-", suffix=".txt")
-    os.close(output_handle)
-    output_file = Path(output_name)
+    branch = f"claude/{issue_key.lower()}-comment-{int(time.time())}"
+    worktree = root / ".worktrees" / branch.split("/", 1)[1]
     worktree_added = False
     try:
         comments = jira.issue_comments(issue_key)
         context = issue_context(issue, comments)
         print(f"[{issue_key}] actionable comment from {(comment.get('author') or {}).get('displayName', 'Unknown')}.", flush=True)
         if dry_run:
-            print(f"[{issue_key}] DRY RUN: would set In Progress, create {branch}, run Codex, push, and create PR.", flush=True)
+            print(f"[{issue_key}] DRY RUN: would set In Progress, create {branch}, run Claude, push, and create PR.", flush=True)
             return True
 
         # Status is changed before implementation so Jira reflects active work.
-        run([python, str(root / "codex" / "api-jira" / "jira_tool.py"), "status", issue_key, "In Progress"], cwd=root)
+        run([python, JIRA_TOOL, "progress", issue_key, "70",
+             "--note", "Watcher is implementing a Jira comment request."], cwd=root)
+        worktree.parent.mkdir(parents=True, exist_ok=True)
         create_branch(root, branch, base_branch, worktree)
         worktree_added = True
-        codex_edit(codex_exe, worktree, context, comment_text, output_file)
+        run(["git", "config", "user.name", GIT_NAME], cwd=worktree)
+        run(["git", "config", "user.email", GIT_EMAIL], cwd=worktree)
+        summary = claude_edit(claude_exe, worktree, context, comment_text)
         files = changed_files(worktree)
         if not files:
-            raise RuntimeError("Codex produced no source changes; PR was not created.")
+            raise RuntimeError("Claude produced no source changes; PR was not created.")
         run(["git", "add", "-A"], cwd=worktree)
         run(["git", "reset", "--", ".env"], cwd=worktree, check=False)
-        run(["git", "commit", "-m", f"Implement Jira request {issue_key}"], cwd=worktree)
+        run(["git", "commit", "-m",
+             f"Implement Jira request {issue_key}\n\nCo-Authored-By: Claude <noreply@anthropic.com>"], cwd=worktree)
         run(["git", "push", "--set-upstream", "origin", branch], cwd=worktree)
-        summary = output_file.read_text(encoding="utf-8", errors="replace") if output_file.exists() else ""
         pr_url = create_pr(python, root, branch, base_branch, issue_key, comment_text, summary)
-        run([python, str(root / "codex" / "api-jira" / "jira_tool.py"), "comment", issue_key, f"Đã tạo PR tự động: {pr_url}"], cwd=root)
+        run([python, JIRA_TOOL, "link-pr", issue_key, pr_url, "--branch", branch, "--status", "Open"], cwd=root)
         print(f"[{issue_key}] PR created: {pr_url}", flush=True)
         return True
     finally:
         if worktree_added:
             run(["git", "worktree", "remove", "--force", str(worktree)], cwd=root, check=False)
-        shutil.rmtree(worktree, ignore_errors=True)
-        output_file.unlink(missing_ok=True)
 
 
 def main():
@@ -193,7 +210,7 @@ def main():
     args = parser.parse_args()
     if args.interval <= 0:
         parser.error("--interval must be greater than zero")
-    root, python, codex_exe, base_branch = load_config()
+    root, python, claude_exe, base_branch = load_config()
     seen = set()
     try:
         issues = jira.current_issues(args.jql)
@@ -210,7 +227,7 @@ def main():
                     if comment_id in seen:
                         continue
                     seen.add(comment_id)
-                    process_comment(root, python, codex_exe, base_branch, issue, comment, args.dry_run)
+                    process_comment(root, python, claude_exe, base_branch, issue, comment, args.dry_run)
             if args.once:
                 return
         while True:
@@ -222,7 +239,7 @@ def main():
                     if comment_id in seen:
                         continue
                     seen.add(comment_id)
-                    process_comment(root, python, codex_exe, base_branch, issue, comment, args.dry_run)
+                    process_comment(root, python, claude_exe, base_branch, issue, comment, args.dry_run)
             if args.once:
                 return
     except KeyboardInterrupt:

@@ -14,3 +14,7 @@ release-keystore/
 .env
 .env.*
 !.env.example
+
+# Claude Code
+.worktrees/
+.claude/settings.local.json

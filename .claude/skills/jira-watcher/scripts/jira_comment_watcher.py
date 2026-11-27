@@ -42,7 +42,7 @@ def get_config():
         print("ERROR: JIRA_EMAIL or EMAIL and JIRA_TOKEN are required.", file=sys.stderr)
         sys.exit(1)
     credentials = base64.b64encode(f"{email}:{token}".encode("utf-8")).decode("ascii")
-    return base_url, {"Authorization": f"Basic {credentials}", "Accept": "application/json", "User-Agent": "codex-jira-comment-watcher"}
+    return base_url, {"Authorization": f"Basic {credentials}", "Accept": "application/json", "User-Agent": "claude-jira-comment-watcher"}
 
 
 def request(method, path, query=None):
