@@ -187,6 +187,62 @@ def issue_context(issue_key):
             print(f"Comment by {author}: {text}")
 
 
+SEARCH_FIELDS = "summary,status,issuetype,priority,assignee,created,updated,parent,description"
+
+
+def search_issues(jql, limit=100, as_json=False, with_links=False):
+    """Run a JQL query (paginated) and print one line per issue, or JSON."""
+    issues, token = [], None
+    while len(issues) < limit:
+        query = {"jql": jql, "maxResults": min(100, limit - len(issues)), "fields": SEARCH_FIELDS}
+        if token:
+            query["nextPageToken"] = token
+        data = request("GET", "/rest/api/3/search/jql", query=query)
+        issues += data.get("issues", [])
+        token = data.get("nextPageToken")
+        if not token or data.get("isLast"):
+            break
+
+    rows = []
+    for issue in issues:
+        fields = issue.get("fields", {})
+        status = fields.get("status") or {}
+        row = {
+            "key": issue.get("key"),
+            "type": (fields.get("issuetype") or {}).get("name"),
+            "summary": fields.get("summary"),
+            "status": status.get("name"),
+            "status_category": (status.get("statusCategory") or {}).get("key"),
+            "priority": (fields.get("priority") or {}).get("name"),
+            "assignee": (fields.get("assignee") or {}).get("displayName"),
+            "parent": (fields.get("parent") or {}).get("key"),
+            "created": (fields.get("created") or "")[:10],
+            "updated": (fields.get("updated") or "")[:10],
+            "description": flatten_adf(fields.get("description") or {}).strip(),
+        }
+        if with_links:
+            links = request("GET", f"/rest/api/3/issue/{urllib.parse.quote(row['key'])}/remotelink")
+            row["links"] = [
+                {"url": link["object"]["url"], "title": link["object"].get("title", "")}
+                for link in links
+            ]
+        rows.append(row)
+
+    if as_json:
+        print_json(rows)
+        return
+
+    for row in rows:
+        line = (
+            f"{row['key']} | {row['type']} | {row['status']} | {row['priority'] or '-'} | "
+            f"{row['assignee'] or '-'} | parent={row['parent'] or '-'} | {row['updated']} | {row['summary']}"
+        )
+        if with_links and row["links"]:
+            line += " | " + ", ".join(link["url"] for link in row["links"])
+        print(line)
+    print(f"total: {len(rows)}")
+
+
 def update_issue(issue_key, summary=None, description=None):
     fields = {}
 
@@ -432,6 +488,15 @@ def main():
     p_context = sub.add_parser("context", help="Print description and comments as plain text")
     p_context.add_argument("issue_key", help="Example: KAN-1")
 
+    p_search = sub.add_parser("search", help="Search issues with JQL")
+    p_search.add_argument(
+        "jql", nargs="?", default=f"project={DEFAULT_PROJECT_KEY} ORDER BY key ASC",
+        help="JQL query (default: every issue in KAN)",
+    )
+    p_search.add_argument("--limit", type=int, default=100, help="Maximum issues to return")
+    p_search.add_argument("--json", action="store_true", help="Print JSON incl. description")
+    p_search.add_argument("--links", action="store_true", help="Also fetch PR/remote links per issue")
+
     p_update = sub.add_parser("update", help="Update issue summary or description")
     p_update.add_argument("issue_key", help="Example: KAN-1")
     p_update.add_argument("--summary", help="New issue summary")
@@ -466,6 +531,8 @@ def main():
         get_issue(args.issue_key)
     elif args.command == "context":
         issue_context(args.issue_key)
+    elif args.command == "search":
+        search_issues(args.jql, args.limit, args.json, args.links)
     elif args.command == "update":
         update_issue(args.issue_key, args.summary, args.description)
     elif args.command == "transitions":

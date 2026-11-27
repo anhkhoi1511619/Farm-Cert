@@ -119,7 +119,11 @@ def storage_to_text(value):
     """Rough plain-text rendering of storage-format XHTML for reading."""
     if not value:
         return ""
-    text = re.sub(r"<ac:parameter[^>]*>.*?</ac:parameter>", "", value, flags=re.S)
+    # Keep the label of status lozenges, drop every other macro parameter.
+    text = re.sub(
+        r'<ac:parameter ac:name="title">(.*?)</ac:parameter>', r"[\1]", value, flags=re.S
+    )
+    text = re.sub(r"<ac:parameter[^>]*>.*?</ac:parameter>", "", text, flags=re.S)
     text = re.sub(r"<br\s*/?>", "\n", text)
     text = re.sub(r"</(p|h[1-6]|li|tr|div|pre|blockquote)>", "\n", text)
     text = re.sub(r"<li[^>]*>", "- ", text)

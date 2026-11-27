@@ -17,6 +17,7 @@ These values were read from the create-metadata endpoint for KAN. Re-query metad
 - Descriptions and comments use Atlassian Document Format (ADF); the script wraps plain text in a single paragraph.
 - Assignee is set by `accountId` (get your own from `GET /rest/api/3/myself`), never by display name.
 - Status changes: `GET /rest/api/3/issue/{key}/transitions`, then `POST` the transition ID. `status` matches the requested name against both the transition name and its destination status.
+- Search: `GET /rest/api/3/search/jql` (the old `/rest/api/3/search` is removed), paginated with `nextPageToken`. JQL is not scoped to KAN automatically: include `project=KAN` in custom queries. `--json` adds plain-text descriptions; `--links` makes one extra request per issue for remote links. Examples: `project=KAN AND status != Done`, `project=KAN AND parent=KAN-12`, `project=KAN AND updated >= -7d`.
 - PR links: `link-pr` creates a remote link (`relationship: implements`, application `github`) which shows in the Jira Development panel, then posts an AI-format comment. It skips the link if the URL already exists.
 
 ## Errors
@@ -34,4 +35,4 @@ These values were read from the create-metadata endpoint for KAN. Re-query metad
 
 ## Extending
 
-Add a subcommand in `main()` following the pattern: CLI argument → validate → `request()` → print the result. Candidate additions: assign, priority, labels, due date, search (JQL), attachments.
+Add a subcommand in `main()` following the pattern: CLI argument → validate → `request()` → print the result. Candidate additions: assign, priority, labels, due date, attachments.
