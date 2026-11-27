@@ -20,6 +20,7 @@ Credentials come from the environment or the repo `.env` (`JIRA_TOKEN`, `JIRA_EM
 |---|---|
 | Issue overview | `get KAN-7` |
 | Description + all comments (plain text) | `context KAN-7` |
+| Search with JQL (default: all of KAN) | `search ["status != Done ORDER BY updated DESC"] [--limit 100] [--json] [--links]` |
 | Create a Task | `create "Summary" "Description" [--priority High] [--assignee ACCOUNT_ID]` |
 | Edit summary/description | `update KAN-7 [--summary "..."] [--description "..."]` |
 | List workflow transitions | `transitions KAN-7` |
