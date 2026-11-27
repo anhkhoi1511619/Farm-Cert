@@ -13,7 +13,9 @@ Examples (from the repository root):
   python .claude/skills/github-pr/scripts/github_tool.py create-pr --head feature/x --base main --title "Title"
   python .claude/skills/github-pr/scripts/github_tool.py update-pr 12 --state closed
   python .claude/skills/github-pr/scripts/github_tool.py comment-pr 12 "Comment"
-  python .claude/skills/github-pr/scripts/github_tool.py merge-pr 12 --method squash
+  python .claude/skills/github-pr/scripts/github_tool.py merge-pr 12 --method squash   # also deletes the head branch
+  python .claude/skills/github-pr/scripts/github_tool.py delete-merged-branch 12
+  python .claude/skills/github-pr/scripts/github_tool.py auto-delete-branches --enable
   python .claude/skills/github-pr/scripts/github_tool.py get-commit abc1234
   python .claude/skills/github-pr/scripts/github_tool.py comment-commit abc1234 "Comment"
   python .claude/skills/github-pr/scripts/github_tool.py commit-file docs/status.md --content "Updated" --branch main --message "Update status"
@@ -23,6 +25,7 @@ import argparse
 import base64
 import json
 import os
+import subprocess
 import sys
 import urllib.error
 import urllib.parse
@@ -58,7 +61,8 @@ def get_config():
     return base_url, owner, repo, token
 
 
-def request(method, path, data=None, query=None):
+def request(method, path, data=None, query=None, allow_status=()):
+    """Call the GitHub API. HTTP errors exit, except codes in allow_status (returns None)."""
     base_url, owner, repo, token = get_config()
     path = path.format(owner=urllib.parse.quote(owner), repo=urllib.parse.quote(repo))
     url = base_url + path
@@ -79,6 +83,8 @@ def request(method, path, data=None, query=None):
             return json.loads(raw) if raw else {}
     except urllib.error.HTTPError as error:
         raw = error.read().decode("utf-8", errors="replace")
+        if error.code in allow_status:
+            return None
         try:
             print(json.dumps(json.loads(raw), indent=2, ensure_ascii=False))
         except json.JSONDecodeError:
@@ -183,6 +189,68 @@ def merge_pr(args):
     print(f"Message: {result.get('message')}")
     if result.get("sha"):
         print(f"Merge SHA: {result['sha']}")
+    if result.get("merged") and not args.keep_branch:
+        delete_merged_branch(argparse.Namespace(number=args.number))
+
+
+PROTECTED_BRANCHES = {"main", "master", "develop"}
+
+
+def git(*args):
+    return subprocess.run(["git", *args], capture_output=True, text=True, encoding="utf-8", errors="replace")
+
+
+def delete_merged_branch(args):
+    """Delete the head branch of a merged PR on GitHub and locally, with safety checks."""
+    pr = request("GET", repo_path(f"/pulls/{args.number}"))
+    branch = pr["head"]["ref"]
+    if not pr.get("merged"):
+        print(f"PR #{args.number} is not merged; branch '{branch}' kept.")
+        return
+    base_repo = pr["base"]["repo"]
+    if (pr["head"].get("repo") or {}).get("full_name") != base_repo["full_name"]:
+        print(f"Head branch '{branch}' lives in a fork; not deleted.")
+        return
+    if branch in PROTECTED_BRANCHES or branch == base_repo.get("default_branch"):
+        print(f"'{branch}' is a protected/default branch; not deleted.")
+        return
+    owner = pr["head"]["repo"]["owner"]["login"]
+    open_prs = request("GET", repo_path("/pulls"), query={"state": "open", "head": f"{owner}:{branch}"})
+    open_prs += request("GET", repo_path("/pulls"), query={"state": "open", "base": branch})
+    if open_prs:
+        numbers = ", ".join(f"#{item['number']}" for item in open_prs)
+        print(f"'{branch}' is still used by open PR(s) {numbers}; not deleted.")
+        return
+
+    ref = urllib.parse.quote(branch, safe="/")
+    if request("DELETE", repo_path(f"/git/refs/heads/{ref}"), allow_status=(404, 422)) is None:
+        print(f"Remote branch '{branch}' was already deleted.")
+    else:
+        print(f"Deleted remote branch: {branch}")
+
+    # Local clean-up is best effort: only when run inside a clone that has the branch.
+    if git("rev-parse", "--is-inside-work-tree").returncode:
+        return
+    git("fetch", "--prune", "origin")
+    if git("rev-parse", "--verify", "--quiet", f"refs/heads/{branch}").returncode:
+        return
+    if git("branch", "--show-current").stdout.strip() == branch:
+        print(f"Local branch '{branch}' is checked out; switch away and run: git branch -D {branch}")
+        return
+    # -D is safe here: GitHub confirmed the PR is merged (squash/rebase merges are not ancestors).
+    result = git("branch", "-D", branch)
+    if result.returncode:
+        print(f"Local branch '{branch}' kept: {result.stderr.strip()}")
+    else:
+        print(f"Deleted local branch: {branch}")
+
+
+def auto_delete_setting(args):
+    """Show or change the repository's 'Automatically delete head branches' setting."""
+    if args.enable or args.disable:
+        request("PATCH", "/repos/{owner}/{repo}", {"delete_branch_on_merge": bool(args.enable)})
+    repo = request("GET", "/repos/{owner}/{repo}")
+    print(f"Automatically delete head branches: {repo.get('delete_branch_on_merge')}")
 
 
 def get_commit(args):
@@ -233,7 +301,9 @@ def main():
     p = sub.add_parser("update-pr"); p.add_argument("number", type=int); p.add_argument("--title"); p.add_argument("--body"); p.add_argument("--state", choices=["open", "closed"]); p.add_argument("--base"); p.set_defaults(func=update_pr)
     p = sub.add_parser("comment-pr"); p.add_argument("number", type=int); p.add_argument("comment"); p.set_defaults(func=comment_pr)
     p = sub.add_parser("ai-comment-pr", help="Add a structured AI-authored comment to a PR"); p.add_argument("number", type=int); p.add_argument("--content", required=True); p.add_argument("--proposal", required=True); p.add_argument("--done", required=True); p.add_argument("--not-done", required=True); p.add_argument("--confirmation", required=True); p.set_defaults(func=ai_comment_pr)
-    p = sub.add_parser("merge-pr"); p.add_argument("number", type=int); p.add_argument("--method", choices=["merge", "squash", "rebase"], default="merge"); p.add_argument("--commit-title"); p.add_argument("--commit-message"); p.set_defaults(func=merge_pr)
+    p = sub.add_parser("merge-pr"); p.add_argument("number", type=int); p.add_argument("--method", choices=["merge", "squash", "rebase"], default="merge"); p.add_argument("--commit-title"); p.add_argument("--commit-message"); p.add_argument("--keep-branch", action="store_true", help="Do not delete the head branch after merging"); p.set_defaults(func=merge_pr)
+    p = sub.add_parser("delete-merged-branch", help="Delete the head branch of a merged PR (remote + local)"); p.add_argument("number", type=int); p.set_defaults(func=delete_merged_branch)
+    p = sub.add_parser("auto-delete-branches", help="Show or set GitHub's auto-delete head branches setting"); g = p.add_mutually_exclusive_group(); g.add_argument("--enable", action="store_true"); g.add_argument("--disable", action="store_true"); p.set_defaults(func=auto_delete_setting)
     p = sub.add_parser("get-commit"); p.add_argument("sha"); p.set_defaults(func=get_commit)
     p = sub.add_parser("comment-commit"); p.add_argument("sha"); p.add_argument("comment"); p.set_defaults(func=comment_commit)
     p = sub.add_parser("ai-comment-commit", help="Add a structured AI-authored comment to a commit"); p.add_argument("sha"); p.add_argument("--content", required=True); p.add_argument("--proposal", required=True); p.add_argument("--done", required=True); p.add_argument("--not-done", required=True); p.add_argument("--confirmation", required=True); p.set_defaults(func=ai_comment_commit)
