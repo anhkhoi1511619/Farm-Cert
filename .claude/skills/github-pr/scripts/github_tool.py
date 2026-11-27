@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 """GitHub REST API helper for pull requests and commits.
 
-Environment:
+Environment (read from the process or the nearest .env file):
   GITHUB_TOKEN  required
   GITHUB_OWNER  required
   GITHUB_REPO   required
   GITHUB_BASE_URL optional, defaults to https://api.github.com
 
-Examples:
-  python github_tool.py list-prs --state open
-  python github_tool.py get-pr 12
-  python github_tool.py create-pr --head feature/x --base main --title "Title"
-  python github_tool.py update-pr 12 --state closed
-  python github_tool.py comment-pr 12 "Comment"
-  python github_tool.py merge-pr 12 --method squash
-  python github_tool.py get-commit abc1234
-  python github_tool.py comment-commit abc1234 "Comment"
-  python github_tool.py commit-file docs/status.md --content "Updated" --branch main --message "Update status"
+Examples (from the repository root):
+  python .claude/skills/github-pr/scripts/github_tool.py list-prs --state open
+  python .claude/skills/github-pr/scripts/github_tool.py get-pr 12
+  python .claude/skills/github-pr/scripts/github_tool.py create-pr --head feature/x --base main --title "Title"
+  python .claude/skills/github-pr/scripts/github_tool.py update-pr 12 --state closed
+  python .claude/skills/github-pr/scripts/github_tool.py comment-pr 12 "Comment"
+  python .claude/skills/github-pr/scripts/github_tool.py merge-pr 12 --method squash
+  python .claude/skills/github-pr/scripts/github_tool.py get-commit abc1234
+  python .claude/skills/github-pr/scripts/github_tool.py comment-commit abc1234 "Comment"
+  python .claude/skills/github-pr/scripts/github_tool.py commit-file docs/status.md --content "Updated" --branch main --message "Update status"
 """
 
 import argparse
@@ -27,9 +27,26 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+from pathlib import Path
+
+
+def load_dotenv():
+    """Load KEY=VALUE pairs from the nearest .env without overriding the process environment."""
+    here = Path(__file__).resolve()
+    for directory in (here.parent, *here.parents):
+        env_file = directory / ".env"
+        if not env_file.is_file():
+            continue
+        for raw in env_file.read_text(encoding="utf-8").splitlines():
+            line = raw.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, value = line.split("=", 1)
+                os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+        return
 
 
 def get_config():
+    load_dotenv()
     token = os.getenv("GITHUB_TOKEN")
     owner = os.getenv("GITHUB_OWNER")
     repo = os.getenv("GITHUB_REPO")
@@ -51,7 +68,7 @@ def request(method, path, data=None, query=None):
         "Accept": "application/vnd.github+json",
         "Authorization": f"Bearer {token}",
         "X-GitHub-Api-Version": "2022-11-28",
-        "User-Agent": "codex-github-tool",
+        "User-Agent": "claude-github-tool",
         "Content-Type": "application/json",
     }
     body = json.dumps(data).encode("utf-8") if data is not None else None
@@ -203,6 +220,9 @@ def commit_file(args):
 
 
 def main():
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description="GitHub pull request and commit helper")
     sub = parser.add_subparsers(dest="command", required=True)
 

@@ -2,17 +2,15 @@
 """
 Jira Cloud REST API helper for project KAN.
 
-Usage:
-  python3 jira_tool.py create "Task summary" "Task description" --priority High
-  python3 jira_tool.py status KAN-1 "In Progress"
-  python3 jira_tool.py comment KAN-1 "This is a comment"
-  python3 jira_tool.py get KAN-1
-  python3 jira_tool.py transitions KAN-1
+Usage (from the repository root):
+  python .claude/skills/jira/scripts/jira_tool.py get KAN-1
+  python .claude/skills/jira/scripts/jira_tool.py context KAN-1
+  python .claude/skills/jira/scripts/jira_tool.py create "Summary" "Description" --priority High
+  python .claude/skills/jira/scripts/jira_tool.py status KAN-1 "In Progress"
+  python .claude/skills/jira/scripts/jira_tool.py comment KAN-1 "Comment text"
 
-Authentication:
-  export JIRA_BASE_URL="https://anhkhoidev1511619.atlassian.net"
-  export JIRA_EMAIL="your-jira-email@example.com"
-  export JIRA_TOKEN="your-api-token"
+Authentication is read from the environment or from the nearest .env file:
+  JIRA_TOKEN, JIRA_EMAIL (or EMAIL), JIRA_BASE_URL (optional)
 
 No third-party Python package is required.
 """
@@ -25,23 +23,36 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+from pathlib import Path
 
 
 DEFAULT_BASE_URL = "https://anhkhoidev1511619.atlassian.net"
 DEFAULT_PROJECT_KEY = "KAN"
 
 
+def load_dotenv():
+    """Load KEY=VALUE pairs from the nearest .env without overriding the process environment."""
+    here = Path(__file__).resolve()
+    for directory in (here.parent, *here.parents):
+        env_file = directory / ".env"
+        if not env_file.is_file():
+            continue
+        for raw in env_file.read_text(encoding="utf-8").splitlines():
+            line = raw.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, value = line.split("=", 1)
+                os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+        return
+
+
 def get_config():
+    load_dotenv()
     base_url = os.getenv("JIRA_BASE_URL", DEFAULT_BASE_URL).rstrip("/")
-    email = os.getenv("JIRA_EMAIL")
+    email = os.getenv("JIRA_EMAIL") or os.getenv("EMAIL")
     token = os.getenv("JIRA_TOKEN")
 
     if not email or not token:
-        print("ERROR: JIRA_EMAIL and JIRA_TOKEN are required.")
-        print("")
-        print("Set them first:")
-        print('  export JIRA_EMAIL="your-email@example.com"')
-        print('  export JIRA_TOKEN="your-api-token"')
+        print("ERROR: JIRA_TOKEN and JIRA_EMAIL (or EMAIL) are required in the environment or .env.")
         sys.exit(1)
 
     return base_url, email, token
@@ -145,6 +156,35 @@ def get_issue(issue_key):
     print(f"Assignee : {(fields.get('assignee') or {}).get('displayName')}")
     print(f"Reporter : {(fields.get('reporter') or {}).get('displayName')}")
     print(f"URL      : {get_config()[0]}/browse/{result.get('key')}")
+
+
+def flatten_adf(value):
+    if isinstance(value, dict):
+        return value.get("text", "") + "".join(flatten_adf(item) for item in value.get("content", []))
+    if isinstance(value, list):
+        return "".join(flatten_adf(item) for item in value)
+    return value if isinstance(value, str) else ""
+
+
+def issue_context(issue_key):
+    """Print the issue summary, status, description and all comments as plain text."""
+    encoded = urllib.parse.quote(issue_key)
+    issue = request("GET", f"/rest/api/3/issue/{encoded}", query={"fields": "summary,description,status"})
+    comments = request(
+        "GET", f"/rest/api/3/issue/{encoded}/comment",
+        query={"orderBy": "created", "maxResults": 100},
+    ).get("comments", [])
+    fields = issue.get("fields", {})
+    print(f"Jira key: {issue.get('key', issue_key)}")
+    print(f"Summary: {fields.get('summary', '')}")
+    print(f"Status: {(fields.get('status') or {}).get('name', '')}")
+    print("Description:")
+    print(flatten_adf(fields.get("description") or {}).strip())
+    for comment in comments:
+        author = (comment.get("author") or {}).get("displayName", "Unknown")
+        text = flatten_adf(comment.get("body") or {}).strip()
+        if text:
+            print(f"Comment by {author}: {text}")
 
 
 def update_issue(issue_key, summary=None, description=None):
@@ -389,6 +429,9 @@ def main():
     p_get = sub.add_parser("get", help="Get issue information")
     p_get.add_argument("issue_key", help="Example: KAN-1")
 
+    p_context = sub.add_parser("context", help="Print description and comments as plain text")
+    p_context.add_argument("issue_key", help="Example: KAN-1")
+
     p_update = sub.add_parser("update", help="Update issue summary or description")
     p_update.add_argument("issue_key", help="Example: KAN-1")
     p_update.add_argument("--summary", help="New issue summary")
@@ -421,6 +464,8 @@ def main():
         update_progress(args.issue_key, args.percentage, args.note)
     elif args.command == "get":
         get_issue(args.issue_key)
+    elif args.command == "context":
+        issue_context(args.issue_key)
     elif args.command == "update":
         update_issue(args.issue_key, args.summary, args.description)
     elif args.command == "transitions":
